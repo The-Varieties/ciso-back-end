@@ -1,0 +1,71 @@
+version: '3'
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+services:
+  db:
+    #TODO (james): Replace hardcoded value
+    image: ghcr.io/timescale/dev_promscale_extension:develop-ts2-pg14
+    container_name: db
+    ports:
+      - 5432:5432/tcp
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: cloud
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    expose:
+      - 9100
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./etc/prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      
+  # Grafana just for demonstration purpose only
+  # grafana:
+  #   image: grafana/grafana-oss:latest
+  #   container_name: grafana
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #   restart: unless-stopped
+  promscale:
+    image: timescale/promscale:latest
+    container_name: promscale
+    ports:
+      - 9201:9201/tcp
+    restart: on-failure
+    depends_on:
+      - db
+    environment:
+      PROMSCALE_DB_CONNECT_RETRIES: 10
+      PROMSCALE_WEB_TELEMETRY_PATH: /metrics-text
+      PROMSCALE_DB_URI: postgres://postgres:password@db:5432/cloud?sslmode=allow
+      
+
