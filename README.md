@@ -10,3 +10,11 @@
 * To stop, run `docker-compose down`
 
 **WARNING: These docker will consume your RAM usage so make sure to allocate some for this**
+
+# Export PostgreSQL tables
+docker exec -i db /bin/bash -c "PGPASSWORD=password pg_dump -t your-table-name --username postgres cloud" > /desired/path/on/your/machine/dump.sql
+
+# Restore PostgreSQL tables from the sql file
+docker exec -i db /bin/bash -c "PGPASSWORD=password psql --username postgres cloud" < /path/on/your/machine/dump.sql
+
+** Run the docker-compose first before exporting or restoring PostgreSQL tables
