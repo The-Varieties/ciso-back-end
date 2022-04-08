@@ -3,16 +3,19 @@ version: '3'
 volumes:
   prometheus-data:
     driver: local
-  grafana-data:
+  # grafana-data:
+  #   driver: local
+  db-data:
     driver: local
 
 services:
   db:
-    #TODO (james): Replace hardcoded value
     image: ghcr.io/timescale/dev_promscale_extension:develop-ts2-pg14
     container_name: db
     ports:
       - 5432:5432/tcp
+    volumes:
+      - db-data:/var/lib/db-data
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: postgres
