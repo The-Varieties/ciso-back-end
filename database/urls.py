@@ -1,7 +1,13 @@
-from rest_framework import routers
-from .api import InstanceViewSet
+from django.conf.urls import url
+from database import views
 
-router = routers.DefaultRouter()
-router.register('api/database', InstanceViewSet)
+from django.conf.urls.static import static
+from django.conf import settings
 
-urlpatterns = router.urls
+urlpatterns=[
+
+    url(r'^instance$',views.instanceApi),
+    url(r'^instance/([0-9]+)$',views.instanceApi),
+
+    url(r'^instance/savefile',views.SaveFile)
+]+static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)

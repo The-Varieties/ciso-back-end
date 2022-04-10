@@ -22,6 +22,12 @@ def instanceApi(request,id=0):
             return JsonResponse("Added Successfully",safe=False)
         return JsonResponse("Failed to Add",safe=False)
     elif request.method=='DELETE':
-        instance=Instance.objects.get(instanceId=id)
+        instance=Instance.objects.get(InstanceId=id)
         instance.delete()
         return JsonResponse("Deleted Successfully",safe=False)
+
+@csrf_exempt
+def SaveFile(request):
+    file=request.FILES['file']
+    file_name=default_storage.save(file.name,file)
+    return JsonResponse(file_name,safe=False)
