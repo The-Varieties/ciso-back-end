@@ -7,9 +7,17 @@ from . import utils
 
 
 @api_view(['GET'])
-def get_all(request):
+def get_cpu_usage(request):
     if request.method == 'GET':
         response_data = {
-            'cpu': utils.get_cpu_usage()
+            'cpu': utils.get_cpu_usage( request.query_params['time_interval'])
+        }
+        return JsonResponse(response_data)
+
+@api_view(['GET'])
+def get_ram_usage(request):
+    if request.method == 'GET':
+        response_data = {
+            'ram': utils.get_ram_usage(request.query_params['time_interval'])
         }
         return JsonResponse(response_data)
