@@ -10,7 +10,9 @@ from . import utils
 def get_cpu_usage(request):
     if request.method == 'GET':
         response_data = {
-            'cpu': utils.get_cpu_usage( request.query_params['time_interval'])
+            'cpu': utils.get_cpu_usage( 
+                request.query_params['time_interval'], 
+                request.query_params['instance'])
         }
         return JsonResponse(response_data)
 
@@ -18,6 +20,9 @@ def get_cpu_usage(request):
 def get_ram_usage(request):
     if request.method == 'GET':
         response_data = {
-            'ram': utils.get_ram_usage(request.query_params['time_interval'])
+            'ram': utils.get_ram_usage(
+                request.query_params['time_interval'],
+                request.query_params['instance'])
         }
         return JsonResponse(response_data)
+
