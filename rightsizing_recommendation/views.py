@@ -10,9 +10,9 @@ from . import utils
 def get_cpu_usage(request):
     if request.method == 'GET':
         response_data = {
-            'cpu': utils.get_cpu_usage( 
+            'cpu': "{:.2f}%".format(utils.get_cpu_usage( 
                 request.query_params['time_interval'], 
-                request.query_params['instance'])
+                request.query_params['instance']))
         }
         return JsonResponse(response_data)
 
@@ -20,9 +20,9 @@ def get_cpu_usage(request):
 def get_ram_usage(request):
     if request.method == 'GET':
         response_data = {
-            'ram': utils.get_ram_usage(
+            'ram': "{:.2f}%".format(utils.get_ram_usage(
                 request.query_params['time_interval'],
-                request.query_params['instance'])
+                request.query_params['instance']))
         }
         return JsonResponse(response_data)
     
@@ -36,3 +36,13 @@ def get_server_info(request):
         }
         return JsonResponse(response_data)
 
+
+@api_view(['GET'])
+def get_usage_classifier(request):
+    if request.method == 'GET':
+        response_data = {
+            'usage_cat': utils.get_usage_classifier(
+                request.query_params['instance']
+            )
+        }
+        return JsonResponse(response_data)

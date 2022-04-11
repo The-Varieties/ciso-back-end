@@ -133,12 +133,30 @@ def get_cpu_usage(time_interval, instance):
     
     cpu_percentage = ((total_diff - idle_diff)/total_diff) * 100
     
-    return "{:.2f}%".format(cpu_percentage)
+    # return "{:.2f}%".format(cpu_percentage)
+    return cpu_percentage
 
 def get_ram_usage(time_interval, instance):
     available_mem, total_mem = fetch_metric_db(time_interval=time_interval, metric='ram', instance=instance)
     
     ram_percentage = (1 - (available_mem / total_mem)) * 100
-    return "{:.2f}%".format(ram_percentage)
+    # return "{:.2f}%".format(ram_percentage)
+    return ram_percentage
 
 
+def get_usage_classifier(instance):
+    # todo: Make datatype for different category using dict
+    # 0 -> optimized
+    # 1 -> under
+    # 2 -> over  
+    usage_category = 0
+    
+    cpu_usage_percentage = float(get_cpu_usage('7 days', 'node_exporter'))
+    ram_usage_percentage = float(get_ram_usage('7 days', 'node_exporter'))
+    
+    if cpu_usage_percentage > 90:
+        usage_category = 2
+    elif cpu_usage_percentage < 60 and ram_usage_percentage < 60:
+        usage_category = 1
+    
+    return usage_category
