@@ -45,7 +45,7 @@ def fetch_metric_db (instance, time_interval='5 minutes', order_by='desc', metri
             case 'ram':
                 query = 'select sum(value) from "node_memory_MemAvailable_bytes" ' \
                         'where time > now() - %(val)s::interval and val(job_id) = %(instance)s ' \
-                        'union' \
+                        'union ' \
                         'select sum(value) from "node_memory_MemTotal_bytes" where ' \
                         'time > now() - %(val)s::interval and val(job_id) = %(instance)s'
                         
