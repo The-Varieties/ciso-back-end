@@ -25,4 +25,14 @@ def get_ram_usage(request):
                 request.query_params['instance'])
         }
         return JsonResponse(response_data)
+    
+@api_view(['GET'])
+def get_server_info(request):
+    if request.method == 'GET':
+        response_data = {
+            'server_info': utils.get_server_info(
+                request.query_params['instance']
+            )
+        }
+        return JsonResponse(response_data)
 

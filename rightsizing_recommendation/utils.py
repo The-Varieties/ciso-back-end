@@ -1,4 +1,5 @@
 from django.db import connection
+import math
 
 # Fetching from database functions
 def fetch_metric_db (instance, time_interval='5 minutes', order_by='desc', metric='cpu'):
@@ -15,31 +16,32 @@ def fetch_metric_db (instance, time_interval='5 minutes', order_by='desc', metri
     with connection.cursor() as curr:
         match metric:
             case 'cpu':
-                query = ''
                 if order_by == 'desc':                   
-                    query = "select time, val(mode_id) as mode, sum(value) " \
-                            "from node_cpu_seconds_total where " \
-                            "time > now() - %(val)s::interval and val(job_id) = %(instance)s " \
-                            "group by time, mode_id order by time desc limit 8"
+                    query = 'select time, val(mode_id) as mode, sum(value) ' \
+                            'from node_cpu_seconds_total where ' \
+                            'time > now() - %(val)s::interval and val(job_id) = %(instance)s ' \
+                            'group by time, mode_id order by time desc limit 8;'
                 else:
-                    query = "select time, val(mode_id) as mode, sum(value) " \
-                            "from node_cpu_seconds_total where " \
-                            "time > now() - %(val)s::interval and val(job_id) = %(instance)s " \
-                            "group by time, mode_id order by time asc limit 8"
+                    query = 'select time, val(mode_id) as mode, sum(value) ' \
+                            'from node_cpu_seconds_total where ' \
+                            'time > now() - %(val)s::interval and val(job_id) = %(instance)s ' \
+                            'group by time, mode_id order by time asc limit 8;'
+                
+                
             
                 curr.execute(query, {'val': time_interval, 'instance': instance})
                 
                 records = curr.fetchall()
-                
+                                    
                 total_idle = 0
-                total_non_idle = 0
+                total_non_idle = 0           
                 
                 for row in records:
                     if row[1] in ["idle", "iowait"]:
                         total_idle += row[2]
                     else:
                         total_non_idle += row[2]
-                
+                    
                 return total_idle, total_non_idle 
             
             case 'ram':
@@ -47,7 +49,7 @@ def fetch_metric_db (instance, time_interval='5 minutes', order_by='desc', metri
                         'where time > now() - %(val)s::interval and val(job_id) = %(instance)s ' \
                         'union ' \
                         'select sum(value) from "node_memory_MemTotal_bytes" where ' \
-                        'time > now() - %(val)s::interval and val(job_id) = %(instance)s'
+                        'time > now() - %(val)s::interval and val(job_id) = %(instance)s;'
                         
                 curr.execute(query, {'val': time_interval, 'instance': instance})
                 
@@ -63,10 +65,61 @@ def fetch_metric_db (instance, time_interval='5 minutes', order_by='desc', metri
                         available_memory = row[0]
                 
                 return available_memory, total_memory
-                
-def fetch_instance_details_db ():
-    pass   
     
+    # if connection:
+    #     connection.close()
+                
+def fetch_instance_details_db (instance, type):
+    with connection.cursor() as curr:
+        match type:
+            case 'total_ram':
+                query = 'select value from "node_memory_MemTotal_bytes" ' \
+                        'where val(job_id) = %(instance)s limit 1;'
+                curr.execute(query, {'instance': instance})
+                record = curr.fetchone()
+                return math.ceil(record[0])
+                
+            case 'uptime':
+                query = 'select (extract(epoch from now()) ' \
+                        ' - (select value from node_boot_time_seconds ' \
+                        'where val(job_id) = %(instance)s order by time desc limit 1;'
+                curr.execute(query, {'instance': instance})
+                record = curr.fetchone()
+                
+                total_time = round(record[0] / 3600, 2)
+                time_unit = ""
+                
+                
+                if (total_time < 0):
+                    total_time = round(record[0] / 60)
+                    time_unit = "minutes"
+                elif (total_time >= 24):
+                    total_time = math.trunc(total_time)
+                    time_unit = "days"
+                    
+                return "{0} {1}".format(total_time, time_unit)
+                    
+            case 'cpu_count':
+                query = 'select count(distinct cpu_id) from node_cpu_seconds_total where val(mode_id) = "system" and val(job_id) = %(instance)s;'
+                curr.execute(query, {'instance': instance})
+                
+                record = curr.fetchone()
+                
+                return record[0]
+                
+            case 'server_info':
+                query = 'select jsonb(labels) from node_uname_info where val(job_id) = %(instance)s limit 1;'
+                curr.execute(query, {'instance': instance})
+                
+                record = curr.fetchone()
+                
+                return record[0]
+    
+
+def get_server_info(instance):
+    data = fetch_instance_details_db('node_exporter', 'server_info')
+    return data
+        
 def get_cpu_usage(time_interval, instance): 
     
     prev_idle, prev_non_idle = fetch_metric_db(time_interval=time_interval, order_by="asc", instance=instance)
@@ -87,4 +140,5 @@ def get_ram_usage(time_interval, instance):
     
     ram_percentage = (1 - (available_mem / total_mem)) * 100
     return "{:.2f}%".format(ram_percentage)
+
 
