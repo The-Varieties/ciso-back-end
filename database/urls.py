@@ -1,4 +1,4 @@
-from django.conf.urls import url
+from django.urls import url
 from database import views
 
 from django.conf.urls.static import static
