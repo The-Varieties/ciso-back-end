@@ -22,7 +22,7 @@ def instanceApi(request,id=0):
             return JsonResponse("Added Successfully",safe=False)
         return JsonResponse("Failed to Add",safe=False)
     elif request.method=='DELETE':
-        instance=Instance.objects.get(InstanceId=id)
+        instance=Instance.objects.get(id=id)
         instance.delete()
         return JsonResponse("Deleted Successfully",safe=False)
 
