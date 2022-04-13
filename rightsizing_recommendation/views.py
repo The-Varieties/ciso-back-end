@@ -32,7 +32,19 @@ def get_server_info(request):
         response_data = {
             'server_info': utils.get_server_info(
                 request.query_params['instance']
-            )
+            ),
+            'uptime': utils.fetch_instance_details_db(
+                request.query_params['instance'],
+                'uptime'
+            ),
+            'cpu_count': utils.fetch_instance_details_db(
+                request.query_params['instance'],
+                'cpu_count'
+            ),
+            'total_ram': "{0} GB".format(utils.fetch_instance_details_db(
+                request.query_params['instance'],
+                'total_ram'
+            ))
         }
         return JsonResponse(response_data)
 

@@ -1,5 +1,6 @@
 from django.db import connection
 import math
+import json
 
 # Fetching from database functions
 def fetch_metric_db (instance, time_interval='5 minutes', order_by='desc', metric='cpu'):
@@ -66,8 +67,6 @@ def fetch_metric_db (instance, time_interval='5 minutes', order_by='desc', metri
                 
                 return available_memory, total_memory
     
-    # if connection:
-    #     connection.close()
                 
 def fetch_instance_details_db (instance, type):
     with connection.cursor() as curr:
@@ -77,12 +76,12 @@ def fetch_instance_details_db (instance, type):
                         'where val(job_id) = %(instance)s limit 1;'
                 curr.execute(query, {'instance': instance})
                 record = curr.fetchone()
-                return math.ceil(record[0])
+                return math.ceil(record[0] / (1024**3))
                 
             case 'uptime':
                 query = 'select (extract(epoch from now()) ' \
                         ' - (select value from node_boot_time_seconds ' \
-                        'where val(job_id) = %(instance)s order by time desc limit 1;'
+                        'where val(job_id) = %(instance)s order by time desc limit 1));'
                 curr.execute(query, {'instance': instance})
                 record = curr.fetchone()
                 
@@ -94,13 +93,13 @@ def fetch_instance_details_db (instance, type):
                     total_time = round(record[0] / 60)
                     time_unit = "minutes"
                 elif (total_time >= 24):
-                    total_time = math.trunc(total_time)
+                    total_time = math.trunc(total_time / 24)
                     time_unit = "days"
                     
                 return "{0} {1}".format(total_time, time_unit)
                     
             case 'cpu_count':
-                query = 'select count(distinct cpu_id) from node_cpu_seconds_total where val(mode_id) = "system" and val(job_id) = %(instance)s;'
+                query = "select count(distinct cpu_id) from node_cpu_seconds_total where val(mode_id) = 'system' and val(job_id) = %(instance)s;"
                 curr.execute(query, {'instance': instance})
                 
                 record = curr.fetchone()
@@ -118,10 +117,11 @@ def fetch_instance_details_db (instance, type):
 
 def get_server_info(instance):
     data = fetch_instance_details_db('node_exporter', 'server_info')
-    return data
+    obj = json.loads(data)
+    print(obj['job'])
+    return obj
         
 def get_cpu_usage(time_interval, instance): 
-    
     prev_idle, prev_non_idle = fetch_metric_db(time_interval=time_interval, order_by="asc", instance=instance)
     curr_idle, curr_non_idle = fetch_metric_db(time_interval=time_interval, instance=instance)
     
@@ -133,14 +133,13 @@ def get_cpu_usage(time_interval, instance):
     
     cpu_percentage = ((total_diff - idle_diff)/total_diff) * 100
     
-    # return "{:.2f}%".format(cpu_percentage)
     return cpu_percentage
 
 def get_ram_usage(time_interval, instance):
     available_mem, total_mem = fetch_metric_db(time_interval=time_interval, metric='ram', instance=instance)
     
     ram_percentage = (1 - (available_mem / total_mem)) * 100
-    # return "{:.2f}%".format(ram_percentage)
+
     return ram_percentage
 
 
