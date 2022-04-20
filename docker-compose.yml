@@ -3,12 +3,28 @@ version: '3'
 volumes:
   prometheus-data:
     driver: local
-  grafana-data:
-    driver: local
+  # grafana-data:
+  #   driver: local
   db-data:
     driver: local
 
 services:
+
+  website:
+    build: .
+    container_name: website
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASS=password
+      - POSTGRES_HOST=db
+    command: python manage.py runserver 0.0.0.0:8000
+    
   db:
     image: ghcr.io/timescale/dev_promscale_extension:develop-ts2-pg14
     container_name: db
@@ -50,14 +66,14 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       
   # Grafana just for demonstration purpose only
-  grafana:
-    image: grafana/grafana-oss:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-    restart: unless-stopped
+  # grafana:
+  #   image: grafana/grafana-oss:latest
+  #   container_name: grafana
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #   restart: unless-stopped
   promscale:
     image: timescale/promscale:latest
     container_name: promscale
