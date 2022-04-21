@@ -1,6 +1,7 @@
 from django.db import connection
 import math
 import json
+from .models import *
 
 # Fetching from database functions
 def fetch_metric_db (instance, time_interval='5 minutes', order_by='desc', metric='cpu'):
@@ -118,7 +119,6 @@ def fetch_instance_details_db (instance, type):
 def get_server_info(instance):
     data = fetch_instance_details_db('node_exporter', 'server_info')
     obj = json.loads(data)
-    print(obj['job'])
     return obj
         
 def get_cpu_usage(time_interval, instance): 

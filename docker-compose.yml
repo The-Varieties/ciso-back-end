@@ -10,20 +10,20 @@ volumes:
 
 services:
 
-  website:
-    build: .
-    container_name: website
-    volumes:
-      - .:/code
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASS=password
-      - POSTGRES_HOST=db
-    command: python manage.py runserver 0.0.0.0:8000
+  # website:
+  #   build: .
+  #   container_name: website
+  #   volumes:
+  #     - .:/code
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - db
+  #   environment:
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASS=password
+  #     - POSTGRES_HOST=db
+  #   command: python manage.py runserver 0.0.0.0:8000
     
   db:
     image: ghcr.io/timescale/dev_promscale_extension:develop-ts2-pg14
