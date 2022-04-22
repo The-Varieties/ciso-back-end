@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'rightsizing_recommendation'
+    'database'
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
