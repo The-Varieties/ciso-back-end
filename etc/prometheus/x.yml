@@ -1,0 +1,5 @@
+---
+- labels:
+    job: node
+  targets:
+  - node-exporter:9100

@@ -58,3 +58,14 @@ def get_usage_classifier(request):
             )
         }
         return JsonResponse(response_data)
+
+@api_view(['GET'])
+def get_rx(request):
+    if request.method == 'GET':
+        response_data = [{
+            "targets": ["node-exporter:9100"],
+            "labels": {
+                "hostname": "node"
+            }
+        }]
+        return JsonResponse(response_data, safe=False)

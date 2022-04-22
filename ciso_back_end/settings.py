@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-&t#&)&x@m8-%)o5pi%hsujlysn)03lw-h-o#wz98nq9c4irzmm
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', 'http://localhost:9090']
 
 
 # Application definition
@@ -72,9 +72,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'cloud',
-        'USER': 'postgres',
-        'PASSWORD': 'password',
-        'HOST': "localhost",
+        'USER': os.environ["POSTGRES_USER"],
+        'PASSWORD': os.environ["POSTGRES_PASS"],
+        'HOST': os.environ["POSTGRES_HOST"],
         'PORT':'5432',
         'TEST': {
             'MIRROR': 'default',
@@ -85,6 +85,10 @@ DATABASES = {
 # 'USER': os.environ["POSTGRES_USER"],
 #         'PASSWORD': os.environ["POSTGRES_PASS"],
 #         'HOST': os.environ["POSTGRES_HOST"],
+
+# 'USER': 'postgres',
+#         'PASSWORD': 'password',
+#         'HOST': "localhost",
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
