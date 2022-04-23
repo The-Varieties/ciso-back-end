@@ -63,7 +63,7 @@ def get_usage_classifier(request):
 def get_rx(request):
     if request.method == 'GET':
         response_data = [{
-            "targets": ["node-exporter:9100"],
+            "targets": ["node-exporter:9100", "ec2-44-204-214-30.compute-1.amazonaws.com:9100"],
             "labels": {
                 "hostname": "node"
             }

@@ -28,7 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'rightsizing_recommendation'
+    'rightsizing_recommendation',
     'database'
 ]
 
@@ -73,9 +73,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'cloud',
-        'USER': os.environ["POSTGRES_USER"],
-        'PASSWORD': os.environ["POSTGRES_PASS"],
-        'HOST': os.environ["POSTGRES_HOST"],
+        'USER': 'postgres',
+        'PASSWORD': 'password',
+        'HOST': "localhost",
         'PORT':'5432',
         'TEST': {
             'MIRROR': 'default',

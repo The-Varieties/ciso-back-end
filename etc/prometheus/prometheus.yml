@@ -18,9 +18,9 @@ scrape_configs:
     #   - targets: ['localhost:9090']
 
   # Example job for node_exporter
-  # - job_name: 'node_exporter'
-  #   static_configs:
-  #     - targets: ['node-exporter:9100']
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
 
   # - job_name: 'node_exporter'
   #   file_sd_configs:
@@ -28,15 +28,15 @@ scrape_configs:
   #       - 'x.yml'
   #     - refresh_interval: 30s
 
-  - job_name: 'node_exporter2'
-    http_sd_configs:
-      - url: 'http://website:8000/api/metrics/get-x/'
-        refresh_interval: 5s
+  # - job_name: 'node_exporter2'
+  #   http_sd_configs:
+  #     - url: 'http://website:8000/api/metrics/get-x/'
+  #       refresh_interval: 5s
       
-# remote_write:
-#   - url: "http://promscale:9201/write"
+remote_write:
+  - url: "http://promscale:9201/write"
   
-# remote_read:
-#   - url: "http://promscale:9201/read"
-#     read_recent: true
+remote_read:
+  - url: "http://promscale:9201/read"
+    read_recent: true
   

@@ -5,4 +5,4 @@ from rest_framework import serializers
 class InstanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Instance
-        fields = ('Instanceid', 'Instancename', 'Instancestatus', 'Instanceipv4')
+        fields = ('Instanceid', 'Instancename', 'Instancestatus', 'Instanceipv4', 'InstanceAWSSecretKey', 'InstanceAWSAccessKey')
