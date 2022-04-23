@@ -1,33 +1,33 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
+from .models import Instance
+from .serializers import InstanceSerializer
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 
-from database.models import Instance
-from database.serializers import InstanceSerializer
-from django.core.files.storage import default_storage
 
 # Create your views here.
 @csrf_exempt
+@api_view(['GET', 'POST', 'DELETE'])
 def instanceApi(request,id=0):
     if request.method=='GET':
         instance = Instance.objects.all()
-        instance_serializer=InstanceSerializer(instance,many=True)
+        instance_serializer = InstanceSerializer(instance,many=True)
         return JsonResponse(instance_serializer.data,safe=False)
+    
     elif request.method=='POST':
-        instance_data=JSONParser().parse(request)
-        instance_serializer=InstanceSerializer(data=instance_data)
+        # instance_data = JSONParser().parse(request)
+        instance_serializer = InstanceSerializer(data=request.data)
+        
         if instance_serializer.is_valid():
             instance_serializer.save()
-            return JsonResponse("Added Successfully",safe=False)
-        return JsonResponse("Failed to Add",safe=False)
+            return Response(data=instance_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
     elif request.method=='DELETE':
-        instance=Instance.objects.get(Instanceid=id)
+        instance = get_object_or_404(Instance, pk=id)
         instance.delete()
-        return JsonResponse("Deleted Successfully",safe=False)
-
-@csrf_exempt
-def SaveFile(request):
-    file=request.FILES['file']
-    file_name=default_storage.save(file.name,file)
-    return JsonResponse(file_name,safe=False)
+        return Response(status=status.HTTP_202_ACCEPTED)
