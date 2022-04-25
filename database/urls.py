@@ -7,4 +7,5 @@ from django.conf import settings
 urlpatterns=[
     path('instance/',views.instanceApi),
     path('instance/<int:id>/',views.instanceApi),
+    path('prometheus-targets/', views.syncPrometheus),
 ]

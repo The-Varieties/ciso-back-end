@@ -1,7 +1,7 @@
 from django.db import connection
 import math
 import json
-from .models import *
+
 
 # Fetching from database functions
 def fetch_metric_db (instance, time_interval='5 minutes', order_by='desc', metric='cpu'):
@@ -144,7 +144,6 @@ def get_ram_usage(time_interval, instance):
 
 
 def get_usage_classifier(instance):
-    # todo: Make datatype for different category using dict
     # 0 -> optimized
     # 1 -> under
     # 2 -> over  
@@ -159,3 +158,27 @@ def get_usage_classifier(instance):
         usage_category = 1
     
     return usage_category
+
+def get_targets_for_prometheus():
+    #  response_data = [{
+    #         "targets": ["node-exporter:9100", "ec2-44-204-214-30.compute-1.amazonaws.com:9100"],
+    #         "labels": {
+    #             "hostname": "node"
+    #         }
+#     }]
+    with connection.cursor() as curr:
+        query = "SELECT instance_id, instance_name, instance_ipv4 from database_instance GROUP BY instance_id, instance_name"
+        curr.execute(query) 
+        
+        records = curr.fetchall()
+        response_data = []
+        
+        for row in records:
+            target_dict = {}
+            target_dict["targets"] = [row[2]]
+            target_dict["labels"] = {"hostname": row[1]}
+
+            response_data.append(target_dict)
+        return response_data
+
+        
