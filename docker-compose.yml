@@ -28,6 +28,7 @@ services:
              python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
     
+
   db:
     image: ghcr.io/timescale/dev_promscale_extension:develop-ts2-pg14
     container_name: db
