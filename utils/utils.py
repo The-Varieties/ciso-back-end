@@ -143,7 +143,7 @@ def get_ram_usage(time_interval, instance):
     return ram_percentage
 
 
-def get_usage_classifier(instance):
+def get_usage_classifier(instance, under_threshold=35, over_threshold=95):
     # 0 -> optimized
     # 1 -> under
     # 2 -> over  
@@ -151,10 +151,10 @@ def get_usage_classifier(instance):
     
     cpu_usage_percentage = float(get_cpu_usage('7 days', 'node_exporter'))
     ram_usage_percentage = float(get_ram_usage('7 days', 'node_exporter'))
-    
-    if cpu_usage_percentage > 90:
+      
+    if cpu_usage_percentage > over_threshold and ram_usage_percentage > over_threshold:
         usage_category = 2
-    elif cpu_usage_percentage < 60 and ram_usage_percentage < 60:
+    elif cpu_usage_percentage < under_threshold and ram_usage_percentage < under_threshold:
         usage_category = 1
     
     return usage_category
