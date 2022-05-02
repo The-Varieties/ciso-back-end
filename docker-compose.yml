@@ -3,8 +3,8 @@ version: '3'
 volumes:
   prometheus-data:
     driver: local
-  # grafana-data:
-  #   driver: local
+  grafana-data:
+    driver: local
   db-data:
     driver: local
 
@@ -70,16 +70,17 @@ services:
     restart: unless-stopped
     command:
       - "--config.file=/conf/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
       
   # Grafana just for demonstration purpose only
-  # grafana:
-  #   image: grafana/grafana-oss:latest
-  #   container_name: grafana
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - grafana-data:/var/lib/grafana
-  #   restart: unless-stopped
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
 
   promscale:
     image: timescale/promscale:latest
