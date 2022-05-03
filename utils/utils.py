@@ -2,12 +2,9 @@ from django.db import connection
 import math
 import json
 import requests as req
-import urllib.parse
 import datetime
 import time
-from datetime import timedelta, timezone, tzinfo
-from dateutil import tz
-import pytz
+from datetime import timedelta, timezone
 
 
 # Fetching from database functions
@@ -165,6 +162,41 @@ def get_usage_classifier(instance, under_threshold=35, over_threshold=95):
         usage_category = 1
     
     return usage_category
+
+def get_recommendations(usage_category):
+    
+    if usage_category == 2:
+        recommendations = [{
+            'recommedantion': 'Upsize the overutilized EC2 instance',
+            'details': 'Upsize the EC2 instances by selecting the right instance family to add more hardware resources',
+            'steps': ['Navigate to the EC2 dashboard in your AWS', 
+                      'Select the overutilized instance and stop it', 
+                      'Change the current instance type to upsize it', 
+                      'After choosing the right instance type, then apply it', 
+                      'Start the EC2 instance again']
+        }, {
+            'recommendation': 'Perform horizontal scaling',
+            'details': 'Increase the capacity of Auto Scaling Group (ASG) to handle the workload by adding more EC2 instances to the group, which consists of the overutilized EC2 instance.',
+            'steps': ['Navigate to the EC2 dashboard in your AWS', 
+                      'In the left panel, choose Auto Scaling Groups', 
+                      'Select the AWS ASG, which you want to upgrade', 
+                      'From the Details tab, click the Edit button to edit the selected ASG configuration', 
+                      'Increase the number of EC2 instances that can be run in that ASG by raising the existing number in the Desired and Max fields',
+                      'Finally click Save to apply the changes']
+        }]
+    
+    elif usage_category == 1:
+        recommendations = [{
+            'recommendation': 'Downsize the underutilized EC2 instance',
+            'details': 'Downsize the EC2 instances by selecting the right instance family to fit the current workload, so it will reduce operation costs',
+            'steps': ['Navigate to the EC2 dashboard in your AWS',
+                      'Select the underutilized instance and stop it',
+                      'Change the current instance type to downsize it',
+                      'After choosing the right instance type, then apply it',
+                      'Start the EC2 instance again']
+        }]
+        
+    return recommendations   
 
 def get_targets_for_prometheus():
     #  response_data = [{
