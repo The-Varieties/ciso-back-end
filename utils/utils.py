@@ -1,6 +1,13 @@
 from django.db import connection
 import math
 import json
+import requests as req
+import urllib.parse
+import datetime
+import time
+from datetime import timedelta, timezone, tzinfo
+from dateutil import tz
+import pytz
 
 
 # Fetching from database functions
@@ -180,5 +187,139 @@ def get_targets_for_prometheus():
 
             response_data.append(target_dict)
         return response_data
+
+
+def data_visualization(instance, time_interval, metric):
+    """Providing time-series data for the metrics in time range
+
+    Args:
+        instance (string): the hostname of the instance
+        time_interval (string): the time interval for the range of the time series, which is either '24 hours', '7 days', or '30 days'
+        metric (string): the chosen metric to be visualized, which is either 'cpu' or 'ram' 
+
+    Returns:
+        JSON: {
+                "name": "ram",
+                "time": "last 24 hours",
+                "hostname": "node",
+                "results": [
+                    {
+                        "sub": "total",
+                        "values": [
+                            [
+                                "2022-05-03T14:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T15:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T16:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T17:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T19:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T20:31:51+07:00",
+                                "6149365760"
+                            ]
+                        ]
+              }, {...}
+    """    
+    
+    url = "http://prometheus:9090/api/v1/query_range"
+    response = {
+        'name': metric,
+        'time': 'last %s' % (time_interval)
+    }
+    
+   
+    if (time_interval == '24 hours'):
+        rate = "1h"
+        start = time.mktime((datetime.datetime.now() - datetime.timedelta(days=1)).timetuple())
+    elif (time_interval == '7 days'):
+        rate = "1d"
+        start = time.mktime((datetime.datetime.now() - datetime.timedelta(days=7)).timetuple())
+    elif (time_interval == '30 days'):
+        rate = "1d"
+        start = time.mktime((datetime.datetime.now() - datetime.timedelta(days=30)).timetuple())
+
+    end = time.mktime(datetime.datetime.now().timetuple())
+    local_zone = timezone(timedelta(hours=7))
+    
+    if str.lower(metric) == 'cpu': 
+        cpus = {
+            'system': 'avg(rate(node_cpu_seconds_total{hostname=~"%s", mode="system"}[%s])) by (hostname) *100' % (instance, rate),
+            'user': 'avg(rate(node_cpu_seconds_total{hostname=~"%s",mode="user"}[%s])) * 100' % (instance, rate),
+            'iowait': 'avg(rate(node_cpu_seconds_total{hostname=~"%s",mode="iowait"}[%s])) by (hostname) *100' % (instance, rate),
+            'idle': '(1 - avg(rate(node_cpu_seconds_total{hostname=~"%s",mode="idle"}[%s])) by (hostname))*100' % (instance, rate)
+        }
+                
+        array_subs = []
+
+        for key in cpus:  
+            params = {'query': cpus[key], 'step': rate, 'start': start, 'end': end}
+            data = req.get(url, params=params).json()
+            if key == 'system':
+                response['hostname'] = data['data']['result'][0]['metric']['hostname']
+            dict_result = {
+                'sub': key,
+            }
+            values = data['data']['result'][0]['values']
+            for i in range(len(values)):
+                dt = datetime.datetime.fromtimestamp(values[i][0])
+                dt_local = dt.astimezone(local_zone)
+                values[i][0] = dt_local
+            dict_result['values'] = values
+            
+            array_subs.append(dict_result)
+        
+        response['results'] = array_subs
+        
+     
+        return response
+    
+    elif str.lower(metric) == 'ram':
+        rams = {
+            'total': 'node_memory_MemTotal_bytes{hostname=~"%s"}' % (instance),
+            'used': 'node_memory_MemTotal_bytes{hostname=~"%s"} - node_memory_MemAvailable_bytes{hostname=~"%s"}' % (instance, instance),
+            'available': 'node_memory_MemAvailable_bytes{hostname=~"%s"}' % (instance)
+        }
+        
+        array_subs = []
+        
+        for key in rams:  
+            params = {'query': rams[key], 'step': rate, 'start': start, 'end': end}
+            data = req.get(url, params=params).json()
+            if key == 'total':
+                response['hostname'] = data['data']['result'][0]['metric']['hostname']
+            dict_result = {
+                'sub': key,
+            }
+            values = data['data']['result'][0]['values']
+            for i in range(len(values)):
+                dt = datetime.datetime.fromtimestamp(values[i][0])
+                dt_local = dt.astimezone(local_zone)
+                values[i][0] = dt_local
+            dict_result['values'] = values
+            
+            array_subs.append(dict_result)
+        
+        response['results'] = array_subs
+        
+     
+        return response
+    
+    
+
+
+    
 
         

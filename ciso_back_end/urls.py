@@ -17,7 +17,9 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path('api/metrics/', include('rightsizing_recommendation.urls')),
     path('admin/', admin.site.urls),
+    path('api/metrics/', include('rightsizing_recommendation.urls')),
+    path('api/metrics/', include('data_visualization.urls')),
     path('api/dashboard/', include('database.urls'))
+    
 ]
