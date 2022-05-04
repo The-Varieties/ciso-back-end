@@ -139,6 +139,23 @@ def get_cpu_usage(time_interval, instance):
     
     return cpu_percentage
 
+# 100 - (avg(rate(node_cpu_seconds_total{instance=~"$node",mode="idle"}[$interval])) * 100)
+def get_cpu_usage_v2(time_interval, instance):
+    url = "http://prometheus:9090/api/v1/query"
+    if (time_interval == '24 hours'):
+        rate = "1h"
+    elif (time_interval == '7 days'):
+        rate = "1d"
+    elif (time_interval == '30 days'):
+        rate = "1d"
+         
+    params = {'query': '100 - (avg(rate(node_cpu_seconds_total{hostname=~"%s",mode="idle"}[2m])) * 100)' % (instance)}
+    result = req.get(url, params=params).json()
+    cpu_usage =float(result['data']['result'][0]['value'][1])
+    return cpu_usage
+    
+    
+
 def get_ram_usage(time_interval, instance):
     available_mem, total_mem = fetch_metric_db(time_interval=time_interval, metric='ram', instance=instance)
     
@@ -147,23 +164,42 @@ def get_ram_usage(time_interval, instance):
     return ram_percentage
 
 
-def get_usage_classifier(instance, under_threshold=35, over_threshold=95):
+# (1 - (node_memory_MemAvailable_bytes{instance=~"$node"} / (node_memory_MemTotal_bytes{instance=~"$node"})))* 100
+def get_ram_usage_v2(time_interval, instance):
+    url = "http://prometheus:9090/api/v1/query"
+    if (time_interval == '24 hours'):
+        rate = "1h"
+    elif (time_interval == '7 days'):
+        rate = "1d"
+    elif (time_interval == '30 days'):
+        rate = "1d"
+        
+    params = {'query': '(1 - (node_memory_MemAvailable_bytes{hostname=~"%s"} / (node_memory_MemTotal_bytes{hostname=~"%s"})))* 100' % (instance, instance)}
+
+    result = req.get(url, params=params).json()
+    ram_usage = float(result['data']['result'][0]['value'][1])
+    return ram_usage
+
+def get_usage_classifier(instance, time_interval='7 days', under_threshold=35, over_threshold=95):
     # 0 -> optimized
     # 1 -> under
     # 2 -> over  
     usage_category = 0
     
-    cpu_usage_percentage = float(get_cpu_usage('7 days', 'node_exporter'))
-    ram_usage_percentage = float(get_ram_usage('7 days', 'node_exporter'))
+    cpu_usage_percentage = get_cpu_usage_v2(time_interval, instance)
+    ram_usage_percentage = get_ram_usage_v2(time_interval, instance)
       
-    if cpu_usage_percentage > over_threshold and ram_usage_percentage > over_threshold:
+    if cpu_usage_percentage > over_threshold or ram_usage_percentage > over_threshold:
         usage_category = 2
-    elif cpu_usage_percentage < under_threshold and ram_usage_percentage < under_threshold:
+    elif cpu_usage_percentage < under_threshold or ram_usage_percentage < under_threshold:
         usage_category = 1
+        
+    recommendations = get_recommendations(usage_category=usage_category)
     
-    return usage_category
+    return cpu_usage_percentage, ram_usage_percentage, usage_category, recommendations
 
 def get_recommendations(usage_category):
+    recommendations = ''
     
     if usage_category == 2:
         recommendations = [{
@@ -195,7 +231,7 @@ def get_recommendations(usage_category):
                       'After choosing the right instance type, then apply it',
                       'Start the EC2 instance again']
         }]
-        
+
     return recommendations   
 
 def get_targets_for_prometheus():

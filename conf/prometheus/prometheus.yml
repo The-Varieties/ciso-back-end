@@ -32,6 +32,20 @@ scrape_configs:
     http_sd_configs:
       - url: 'http://website:8000/api/dashboard/prometheus-targets/'
         refresh_interval: 5s
+
+  # access_key: 'ASIATA5QGSDNBVXKB3XJ'
+  # secret_key: 'mAK/pPKSqTbrARbmF+8LpZCxKBN7tVZo3QsI+24E'
+
+  # - job_name: 'node_exporter3'
+  #   ec2_sd_configs:
+  #     - region: us-east-1
+  #       port: 9100
+  #       refresh_interval: 5s 
+  #       profile: arn:aws:iam::208138571994:role/LabRole
+  #       role_arn: arn:aws:iam::208138571994:instance-profile/LabInstanceProfile
+
+       
+        
       
 remote_write:
   - url: "http://promscale:9201/write"
