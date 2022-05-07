@@ -13,10 +13,10 @@ from utils import utils
 # Create your views here.
 @csrf_exempt
 @api_view(['GET', 'POST', 'DELETE'])
-def instanceApi(request,id=0):
+def userApi(request,id=0):
     if request.method=='GET':
         user = User.objects.all()
-        user_serializer = UserSerializer(instance,many=True)
+        user_serializer = UserSerializer(user,many=True)
             
         return JsonResponse(user_serializer.data,safe=False)
     
@@ -30,6 +30,12 @@ def instanceApi(request,id=0):
         return Response(status=status.HTTP_404_NOT_FOUND)
     
     elif request.method=='DELETE':
-        instance = get_object_or_404(User, pk=id)
-        instance.delete()
+        user = get_object_or_404(User, pk=id)
+        user.delete()
         return Response(status=status.HTTP_202_ACCEPTED)
+
+@api_view(['GET'])
+def syncPrometheus(request):
+    if request.method == 'GET':
+        response_data = utils.get_targets_for_prometheus()
+        return JsonResponse(response_data, safe=False)
