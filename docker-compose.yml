@@ -10,23 +10,23 @@ volumes:
 
 services:
 
-  website:
-    build: .
-    container_name: website
-    volumes:
-      - .:/code
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASS=password
-      - POSTGRES_HOST=db
-    command: >
-      sh -c "python manage.py makemigrations &&
-             python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+#  website:
+#    build: .
+#    container_name: website
+#    volumes:
+#      - .:/code
+#    ports:
+#      - "8000:8000"
+#    depends_on:
+#      - db
+#    environment:
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASS=password
+#      - POSTGRES_HOST=db
+#    command: >
+#      sh -c "python manage.py makemigrations &&
+#             python manage.py migrate &&
+#             python manage.py runserver 0.0.0.0:8000"
     
 
   db:
@@ -36,6 +36,7 @@ services:
       - 5432:5432/tcp
     volumes:
       - db-data:/var/lib/db-data
+    mem_limit: 512m
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: postgres
@@ -49,6 +50,7 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+    mem_limit: 512m
     command:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
@@ -67,6 +69,7 @@ services:
     volumes:
       - ./conf/prometheus:/conf/prometheus
       - prometheus-data:/prometheus
+    mem_limit: 512m
     restart: unless-stopped
     command:
       - "--config.file=/conf/prometheus/prometheus.yml"
@@ -90,6 +93,7 @@ services:
     depends_on:
       - db
       - prometheus
+    mem_limit: 512m
     environment:
       PROMSCALE_DB_CONNECT_RETRIES: 10
       PROMSCALE_WEB_TELEMETRY_PATH: /metrics-text
