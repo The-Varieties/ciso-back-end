@@ -19,5 +19,6 @@ from django.urls import include, path
 urlpatterns = [
     path('api/metrics/', include('rightsizing_recommendation.urls')),
     path('admin/', admin.site.urls),
-    path('api/dashboard/', include('database.urls'))
+    path('api/dashboard/', include('database.urls')),
+    path('api/users/', include('userdata.urls'))
 ]
