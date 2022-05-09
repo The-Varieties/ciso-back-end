@@ -19,6 +19,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    mem_limit: 512m
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASS=password
@@ -28,7 +29,6 @@ services:
              python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
     
-
   db:
     image: ghcr.io/timescale/dev_promscale_extension:develop-ts2-pg14
     container_name: db
@@ -36,6 +36,7 @@ services:
       - 5432:5432/tcp
     volumes:
       - db-data:/var/lib/db-data
+    mem_limit: 512m
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: postgres
@@ -45,6 +46,7 @@ services:
     image: prom/node-exporter:latest
     container_name: node-exporter
     restart: unless-stopped
+    mem_limit: 512m
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -68,6 +70,7 @@ services:
       - ./conf/prometheus:/conf/prometheus
       - prometheus-data:/prometheus
     restart: unless-stopped
+    mem_limit: 512m
     command:
       - "--config.file=/conf/prometheus/prometheus.yml"
       - "--storage.tsdb.retention.time=30d"
@@ -78,6 +81,7 @@ services:
     container_name: grafana
     ports:
       - "3000:3000"
+    mem_limit: 512m
     volumes:
       - grafana-data:/var/lib/grafana
     restart: unless-stopped
@@ -88,6 +92,7 @@ services:
     ports:
       - 9201:9201/tcp
     restart: on-failure
+    mem_limit: 512m
     depends_on:
       - db
       - prometheus

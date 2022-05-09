@@ -308,7 +308,8 @@ def data_visualization(instance, time_interval, metric):
         'time': 'last %s' % (time_interval)
     }
     
-   
+    rate = ""
+    start = None
     if (time_interval == '24 hours'):
         rate = "1h"
         start = time.mktime((datetime.datetime.now() - datetime.timedelta(days=1)).timetuple())
