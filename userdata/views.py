@@ -35,7 +35,7 @@ def userApi(request,id=0):
         return Response(status=status.HTTP_202_ACCEPTED)
 
 @api_view(['GET'])
-def syncPrometheus(request):
+def syncPrometheus2(request):
     if request.method == 'GET':
         response_data = utils.get_targets_for_prometheus()
         return JsonResponse(response_data, safe=False)
