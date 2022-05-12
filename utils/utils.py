@@ -386,6 +386,9 @@ def data_visualization(instance, time_interval, metric):
                     dt = datetime.datetime.fromtimestamp(values[i][0])
                     dt_local = dt.astimezone(local_zone)
                     values[i][0] = dt_local
+                    
+                    size = convert_size(int(values[i][1]))
+                    values[i][1] = size
                 dict_result['values'] = values
                 
                 array_subs.append(dict_result)
@@ -442,7 +445,15 @@ def collect_EC2_instances(AWSAccess_Key, AWS_Secret_Key, AWSSession_Token):
             
             
     return arr_dicts
-    
+
+def convert_size(size_bytes):
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
     
 
 
