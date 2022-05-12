@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from django.conf import settings
 
 urlpatterns=[
-    path('instance/',views.instanceApi),
-    path('instance/<int:id>/',views.instanceApi),
+    path('instance/',views.instance),
+    path('instance/<int:id>/',views.instanceById),
     path('prometheus-targets/', views.syncPrometheus),
 ]

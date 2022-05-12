@@ -1,6 +1,11 @@
 from django.db import connection
 import math
 import json
+import requests as req
+import datetime
+import time
+from datetime import timedelta, timezone
+import boto3 
 
 
 # Fetching from database functions
@@ -121,6 +126,7 @@ def get_server_info(instance):
     obj = json.loads(data)
     return obj
         
+        
 def get_cpu_usage(time_interval, instance): 
     prev_idle, prev_non_idle = fetch_metric_db(time_interval=time_interval, order_by="asc", instance=instance)
     curr_idle, curr_non_idle = fetch_metric_db(time_interval=time_interval, instance=instance)
@@ -135,6 +141,26 @@ def get_cpu_usage(time_interval, instance):
     
     return cpu_percentage
 
+
+def get_cpu_usage_v2(time_interval, instance):
+    url = "http://prometheus:9090/api/v1/query"
+    if (time_interval == '24 hours'):
+        rate = "1h"
+    elif (time_interval == '7 days'):
+        rate = "1d"
+    elif (time_interval == '30 days'):
+        rate = "1d"
+         
+    params = {'query': '100 - (avg(rate(node_cpu_seconds_total{hostname=~"%s",mode="idle"}[2m])) * 100)' % (instance)}
+    result = req.get(url, params=params).json()
+    if (result['status'] == 'success') and (result['data']['result']):  
+        cpu_usage = float(result['data']['result'][0]['value'][1])
+        return cpu_usage
+    else:
+        return None
+    
+    
+
 def get_ram_usage(time_interval, instance):
     available_mem, total_mem = fetch_metric_db(time_interval=time_interval, metric='ram', instance=instance)
     
@@ -143,29 +169,83 @@ def get_ram_usage(time_interval, instance):
     return ram_percentage
 
 
-def get_usage_classifier(instance):
+def get_ram_usage_v2(time_interval, instance):
+    url = "http://prometheus:9090/api/v1/query"
+    if (time_interval == '24 hours'):
+        rate = "1h"
+    elif (time_interval == '7 days'):
+        rate = "1d"
+    elif (time_interval == '30 days'):
+        rate = "1d"
+        
+    params = {'query': '(1 - (node_memory_MemAvailable_bytes{hostname=~"%s"} / (node_memory_MemTotal_bytes{hostname=~"%s"})))* 100' % (instance, instance)}
+
+    result = req.get(url, params=params).json()
+    
+    if (result['status'] == 'success') and (result['data']['result']):
+        ram_usage = float(result['data']['result'][0]['value'][1])
+        return ram_usage
+    else:
+        return None
+
+def get_usage_classifier(instance, time_interval='7 days', under_threshold=35, over_threshold=95):
     # 0 -> optimized
     # 1 -> under
     # 2 -> over  
     usage_category = 0
     
-    cpu_usage_percentage = float(get_cpu_usage('7 days', 'node_exporter'))
-    ram_usage_percentage = float(get_ram_usage('7 days', 'node_exporter'))
+    cpu_usage_percentage = get_cpu_usage_v2(time_interval, instance)
+    ram_usage_percentage = get_ram_usage_v2(time_interval, instance)
     
-    if cpu_usage_percentage > 90:
-        usage_category = 2
-    elif cpu_usage_percentage < 60 and ram_usage_percentage < 60:
-        usage_category = 1
+    if cpu_usage_percentage and ram_usage_percentage:
+        if cpu_usage_percentage > over_threshold or ram_usage_percentage > over_threshold:
+            usage_category = 2
+        elif cpu_usage_percentage < under_threshold or ram_usage_percentage < under_threshold:
+            usage_category = 1
+            
+        recommendations = get_recommendations(usage_category=usage_category)
+        
+        return cpu_usage_percentage, ram_usage_percentage, usage_category, recommendations
+    else:
+        return None
+
+def get_recommendations(usage_category):
+    recommendations = ''
     
-    return usage_category
+    if usage_category == 2:
+        recommendations = [{
+            'recommedantion': 'Upsize the overutilized EC2 instance',
+            'details': 'Upsize the EC2 instances by selecting the right instance family to add more hardware resources',
+            'steps': ['Navigate to the EC2 dashboard in your AWS', 
+                      'Select the overutilized instance and stop it', 
+                      'Change the current instance type to upsize it', 
+                      'After choosing the right instance type, then apply it', 
+                      'Start the EC2 instance again']
+        }, {
+            'recommendation': 'Perform horizontal scaling',
+            'details': 'Increase the capacity of Auto Scaling Group (ASG) to handle the workload by adding more EC2 instances to the group, which consists of the overutilized EC2 instance.',
+            'steps': ['Navigate to the EC2 dashboard in your AWS', 
+                      'In the left panel, choose Auto Scaling Groups', 
+                      'Select the AWS ASG, which you want to upgrade', 
+                      'From the Details tab, click the Edit button to edit the selected ASG configuration', 
+                      'Increase the number of EC2 instances that can be run in that ASG by raising the existing number in the Desired and Max fields',
+                      'Finally click Save to apply the changes']
+        }]
+    
+    elif usage_category == 1:
+        recommendations = [{
+            'recommendation': 'Downsize the underutilized EC2 instance',
+            'details': 'Downsize the EC2 instances by selecting the right instance family to fit the current workload, so it will reduce operation costs',
+            'steps': ['Navigate to the EC2 dashboard in your AWS',
+                      'Select the underutilized instance and stop it',
+                      'Change the current instance type to downsize it',
+                      'After choosing the right instance type, then apply it',
+                      'Start the EC2 instance again']
+        }]
+
+    return recommendations   
 
 def get_targets_for_prometheus():
-    #  response_data = [{
-    #         "targets": ["node-exporter:9100", "ec2-44-204-214-30.compute-1.amazonaws.com:9100"],
-    #         "labels": {
-    #             "hostname": "node"
-    #         }
-#     }]
     with connection.cursor() as curr:
         query = "SELECT instance_id, instance_name, instance_ipv4 from database_instance GROUP BY instance_id, instance_name"
         curr.execute(query) 
@@ -180,5 +260,203 @@ def get_targets_for_prometheus():
 
             response_data.append(target_dict)
         return response_data
+
+
+def data_visualization(instance, time_interval, metric):
+    """Providing time-series data for the metrics in time range
+
+    Args:
+        instance (string): the hostname of the instance
+        time_interval (string): the time interval for the range of the time series, which is either '24 hours', '7 days', or '30 days'
+        metric (string): the chosen metric to be visualized, which is either 'cpu' or 'ram' 
+
+    Returns:
+        JSON: {
+                "name": "ram",
+                "time": "last 24 hours",
+                "hostname": "node",
+                "results": [
+                    {
+                        "sub": "total",
+                        "values": [
+                            [
+                                "2022-05-03T14:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T15:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T16:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T17:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T19:31:51+07:00",
+                                "6149365760"
+                            ],
+                            [
+                                "2022-05-03T20:31:51+07:00",
+                                "6149365760"
+                            ]
+                        ]
+              }, {...}
+    """    
+    
+    url = "http://prometheus:9090/api/v1/query_range"
+    response = {
+        'name': metric,
+        'time': 'last %s' % (time_interval)
+    }
+    
+    rate = ""
+    start = None
+    if (time_interval == '24 hours'):
+        rate = "1h"
+        start = time.mktime((datetime.datetime.now() - datetime.timedelta(days=1)).timetuple())
+    elif (time_interval == '7 days'):
+        rate = "1d"
+        start = time.mktime((datetime.datetime.now() - datetime.timedelta(days=7)).timetuple())
+    elif (time_interval == '30 days'):
+        rate = "1d"
+        start = time.mktime((datetime.datetime.now() - datetime.timedelta(days=30)).timetuple())
+
+    end = time.mktime(datetime.datetime.now().timetuple())
+    local_zone = timezone(timedelta(hours=7))
+    
+    if str.lower(metric) == 'cpu': 
+        cpus = {
+            'system': 'avg(rate(node_cpu_seconds_total{hostname=~"%s", mode="system"}[%s])) by (hostname) *100' % (instance, rate),
+            'user': 'avg(rate(node_cpu_seconds_total{hostname=~"%s",mode="user"}[%s])) * 100' % (instance, rate),
+            'iowait': 'avg(rate(node_cpu_seconds_total{hostname=~"%s",mode="iowait"}[%s])) by (hostname) *100' % (instance, rate),
+            'idle': '(1 - avg(rate(node_cpu_seconds_total{hostname=~"%s",mode="idle"}[%s])) by (hostname))*100' % (instance, rate)
+        }
+                
+        array_subs = []
+
+        for key in cpus:  
+            params = {'query': cpus[key], 'step': rate, 'start': start, 'end': end}
+            data = req.get(url, params=params).json()
+            if (data['status'] == 'success') and (data['data']['result']):
+                if key == 'system':
+                    response['hostname'] = data['data']['result'][0]['metric']['hostname']
+                dict_result = {
+                    'sub': key,
+                }
+                values = data['data']['result'][0]['values']
+                for i in range(len(values)):
+                    dt = datetime.datetime.fromtimestamp(values[i][0])
+                    dt_local = dt.astimezone(local_zone)
+                    values[i][0] = dt_local
+                dict_result['values'] = values
+                
+                array_subs.append(dict_result)
+            else:
+                return None
+        
+        response['results'] = array_subs
+        
+     
+        return response
+    
+    elif str.lower(metric) == 'ram':
+        rams = {
+            'total': 'node_memory_MemTotal_bytes{hostname=~"%s"}' % (instance),
+            'used': 'node_memory_MemTotal_bytes{hostname=~"%s"} - node_memory_MemAvailable_bytes{hostname=~"%s"}' % (instance, instance),
+            'available': 'node_memory_MemAvailable_bytes{hostname=~"%s"}' % (instance)
+        }
+        
+        array_subs = []
+        
+        for key in rams:  
+            params = {'query': rams[key], 'step': rate, 'start': start, 'end': end}
+            data = req.get(url, params=params).json()
+            if (data['status'] == 'success') and (data['data']['result']):
+                if key == 'total':
+                    response['hostname'] = data['data']['result'][0]['metric']['hostname']
+                dict_result = {
+                    'sub': key,
+                }
+                values = data['data']['result'][0]['values']
+                for i in range(len(values)):
+                    dt = datetime.datetime.fromtimestamp(values[i][0])
+                    dt_local = dt.astimezone(local_zone)
+                    values[i][0] = dt_local
+                    
+                    size = convert_size(int(values[i][1]))
+                    values[i][1] = size
+                dict_result['values'] = values
+                
+                array_subs.append(dict_result)
+            else:
+                return None
+        
+        response['results'] = array_subs
+        
+     
+        return response
+    
+def collect_EC2_instances(AWSAccess_Key, AWS_Secret_Key, AWSSession_Token):
+    session = boto3.Session(aws_access_key_id=AWSAccess_Key,
+                            aws_secret_access_key=AWS_Secret_Key,
+                            aws_session_token=AWSSession_Token, 
+                            region_name='us-east-1')
+
+    client = session.client('ec2')
+    resource = session.resource('ec2')
+
+
+    Myec2=client.describe_instances()
+    x = list(Myec2.keys())
+
+    arr_dicts = []
+
+    for i in range(len(x) - 1):
+        for y in Myec2[x[i]]:
+            for z in y['Instances']:
+                instance_dict = {
+                    "instance_pricing_plan": x[i],
+                    "instance_type": z["InstanceType"],
+                    "instance_ipv4": z["PublicIpAddress"] + ":9100",
+                    "instance_AWSSecretKey": AWS_Secret_Key,
+                    "instance_AWSAccessKey": AWSAccess_Key,
+                    "instance_AWSSessionToken": AWSSession_Token,
+                    "instance_region": z["Placement"]["AvailabilityZone"],
+                    "instance_os": z["PlatformDetails"],
+                }   
+                
+                for j in z["Tags"]:
+                    if "Name" in j.values():
+                        instance_dict["instance_name"] = j["Value"]
+                        
+                if "instance_name" not in instance_dict:
+                    instance_dict["instance_name"] = "Instance"
+                
+                volume_id = z["BlockDeviceMappings"][0]["Ebs"]["VolumeId"]
+                
+                for volume in resource.volumes.filter(VolumeIds=[volume_id]):
+                    instance_dict["instance_volume_type"] = volume.volume_type
+                
+                arr_dicts.append(instance_dict)
+            
+            
+    return arr_dicts
+
+def convert_size(size_bytes):
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
+    
+
+
+    
 
         
