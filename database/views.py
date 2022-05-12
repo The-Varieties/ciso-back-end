@@ -15,7 +15,7 @@ import json
 # Create your views here.
 @csrf_exempt
 @api_view(['GET', 'POST', 'DELETE'])
-def instanceApi(request,id=0):
+def instance(request):
     if request.method=='GET':
         instance = Instance.objects.all()
         instance_serializer = InstanceSerializer(instance,many=True)
@@ -27,7 +27,6 @@ def instanceApi(request,id=0):
     
     elif request.method=='POST':
         aws_credentials = request.POST.dict()
-        # print(aws_credentials["secret_key"])
         
         instances = utils.collect_EC2_instances(aws_credentials["access_key"], 
                                     aws_credentials["secret_key"],
@@ -42,26 +41,32 @@ def instanceApi(request,id=0):
         
         instance_serializer.save()
         
-        # mydata = json.loads(request.body.decode("utf-8"))
-        # print(mydata["instance_name"])
-        
         return Response(data=instance_serializer.data, status=status.HTTP_201_CREATED)
-        
-        # instance_serializer = InstanceSerializer(data=request.data)
-        
-        # if instance_serializer.is_valid():
-        #     instance_serializer.save()
-        #     return Response(data=instance_serializer.data, status=status.HTTP_201_CREATED)
-        # return Response(status=status.HTTP_404_NOT_FOUND)
+
     
+    
+@api_view(['GET', 'DELETE'])
+def instanceById(request, id):
+    if request.method == 'GET':
+        try:
+            instance = Instance.objects.get(pk=id)
+        except Instance.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        instance_serializer = InstanceSerializer(instance)
+        instance_serializer.data["instance_status"] = utils.get_usage_classifier(instance_serializer.data["instance_name"])
+        
+        return Response(instance_serializer.data, status=status.HTTP_200_OK)
+        
     elif request.method=='DELETE':
         instance = get_object_or_404(Instance, pk=id)
         instance.delete()
         return Response(status=status.HTTP_202_ACCEPTED)
-    
-# "ec2-44-204-214-30.compute-1.amazonaws.com:9100"
+
 @api_view(['GET'])
 def syncPrometheus(request):
     if request.method == 'GET':
         response_data = utils.get_targets_for_prometheus()
         return JsonResponse(response_data, safe=False)
+    
+
