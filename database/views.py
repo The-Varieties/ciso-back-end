@@ -31,7 +31,7 @@ def instance(request):
         return JsonResponse(instance_serializer.data,safe=False)
     
     elif request.method=='POST':
-        aws_credentials = request.POST.dict()
+        aws_credentials = json.loads(request.body.decode('utf-8'))
         
         instances = utils.collect_EC2_instances(aws_credentials["access_key"], 
                                     aws_credentials["secret_key"],
