@@ -60,10 +60,11 @@ def instanceById(request, id):
         
         instance_serializer = InstanceSerializer(instance)
         data = instance_serializer.data
+     
         data["instance_status"] = utils.get_usage_classifier(data["instance_name"])
 
-    
-        return Response(instance_serializer.data, status=status.HTTP_200_OK)
+
+        return Response(data, status=status.HTTP_200_OK)
         
     elif request.method=='DELETE':
         instance = get_object_or_404(Instance, pk=id)
