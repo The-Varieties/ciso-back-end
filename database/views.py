@@ -21,7 +21,12 @@ def instance(request):
         instance_serializer = InstanceSerializer(instance,many=True)
         
         for data in instance_serializer.data:
-            data["instance_status"] = utils.get_usage_classifier(data["instance_name"])
+            usage = utils.get_usage_classifier(data["instance_name"])
+            
+            if usage:
+                data["instance_status"] = usage
+            else:
+                data["instance_status"] = "Pending"
             
         return JsonResponse(instance_serializer.data,safe=False)
     
