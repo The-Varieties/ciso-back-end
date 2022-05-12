@@ -341,19 +341,22 @@ def data_visualization(instance, time_interval, metric):
         for key in cpus:  
             params = {'query': cpus[key], 'step': rate, 'start': start, 'end': end}
             data = req.get(url, params=params).json()
-            if key == 'system':
-                response['hostname'] = data['data']['result'][0]['metric']['hostname']
-            dict_result = {
-                'sub': key,
-            }
-            values = data['data']['result'][0]['values']
-            for i in range(len(values)):
-                dt = datetime.datetime.fromtimestamp(values[i][0])
-                dt_local = dt.astimezone(local_zone)
-                values[i][0] = dt_local
-            dict_result['values'] = values
-            
-            array_subs.append(dict_result)
+            if (data['status'] == 'success') and (data['data']['result']):
+                if key == 'system':
+                    response['hostname'] = data['data']['result'][0]['metric']['hostname']
+                dict_result = {
+                    'sub': key,
+                }
+                values = data['data']['result'][0]['values']
+                for i in range(len(values)):
+                    dt = datetime.datetime.fromtimestamp(values[i][0])
+                    dt_local = dt.astimezone(local_zone)
+                    values[i][0] = dt_local
+                dict_result['values'] = values
+                
+                array_subs.append(dict_result)
+            else:
+                return None
         
         response['results'] = array_subs
         
@@ -372,19 +375,22 @@ def data_visualization(instance, time_interval, metric):
         for key in rams:  
             params = {'query': rams[key], 'step': rate, 'start': start, 'end': end}
             data = req.get(url, params=params).json()
-            if key == 'total':
-                response['hostname'] = data['data']['result'][0]['metric']['hostname']
-            dict_result = {
-                'sub': key,
-            }
-            values = data['data']['result'][0]['values']
-            for i in range(len(values)):
-                dt = datetime.datetime.fromtimestamp(values[i][0])
-                dt_local = dt.astimezone(local_zone)
-                values[i][0] = dt_local
-            dict_result['values'] = values
-            
-            array_subs.append(dict_result)
+            if (data['status'] == 'success') and (data['data']['result']):
+                if key == 'total':
+                    response['hostname'] = data['data']['result'][0]['metric']['hostname']
+                dict_result = {
+                    'sub': key,
+                }
+                values = data['data']['result'][0]['values']
+                for i in range(len(values)):
+                    dt = datetime.datetime.fromtimestamp(values[i][0])
+                    dt_local = dt.astimezone(local_zone)
+                    values[i][0] = dt_local
+                dict_result['values'] = values
+                
+                array_subs.append(dict_result)
+            else:
+                return None
         
         response['results'] = array_subs
         
