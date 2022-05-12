@@ -1,3 +1,4 @@
+from urllib import response
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
@@ -8,6 +9,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from utils import utils
+import json
 
 
 # Create your views here.
@@ -24,13 +26,33 @@ def instanceApi(request,id=0):
         return JsonResponse(instance_serializer.data,safe=False)
     
     elif request.method=='POST':
-        # instance_data = JSONParser().parse(request)
-        instance_serializer = InstanceSerializer(data=request.data)
+        aws_credentials = request.POST.dict()
+        # print(aws_credentials["secret_key"])
         
-        if instance_serializer.is_valid():
-            instance_serializer.save()
-            return Response(data=instance_serializer.data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        instances = utils.collect_EC2_instances(aws_credentials["access_key"], 
+                                    aws_credentials["secret_key"],
+                                    aws_credentials["session_token"])
+        
+        is_many = isinstance(instances, list)
+        
+        instance_serializer = InstanceSerializer(data=instances, many=is_many)
+        
+        if not instance_serializer.is_valid(): 
+            return Response(instance_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        instance_serializer.save()
+        
+        # mydata = json.loads(request.body.decode("utf-8"))
+        # print(mydata["instance_name"])
+        
+        return Response(data=instance_serializer.data, status=status.HTTP_201_CREATED)
+        
+        # instance_serializer = InstanceSerializer(data=request.data)
+        
+        # if instance_serializer.is_valid():
+        #     instance_serializer.save()
+        #     return Response(data=instance_serializer.data, status=status.HTTP_201_CREATED)
+        # return Response(status=status.HTTP_404_NOT_FOUND)
     
     elif request.method=='DELETE':
         instance = get_object_or_404(Instance, pk=id)

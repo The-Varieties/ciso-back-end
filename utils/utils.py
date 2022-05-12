@@ -5,6 +5,7 @@ import requests as req
 import datetime
 import time
 from datetime import timedelta, timezone
+import boto3 
 
 
 # Fetching from database functions
@@ -385,6 +386,52 @@ def data_visualization(instance, time_interval, metric):
         
      
         return response
+    
+def collect_EC2_instances(AWSAccess_Key, AWS_Secret_Key, AWSSession_Token):
+    session = boto3.Session(aws_access_key_id=AWSAccess_Key,
+                            aws_secret_access_key=AWS_Secret_Key,
+                            aws_session_token=AWSSession_Token, 
+                            region_name='us-east-1')
+
+    client = session.client('ec2')
+    resource = session.resource('ec2')
+
+
+    Myec2=client.describe_instances()
+    x = list(Myec2.keys())
+
+    arr_dicts = []
+
+    for i in range(len(x) - 1):
+        for y in Myec2[x[i]]:
+            for z in y['Instances']:
+                instance_dict = {
+                    "instance_pricing_plan": x[i],
+                    "instance_type": z["InstanceType"],
+                    "instance_ipv4": z["PublicIpAddress"] + ":9100",
+                    "instance_AWSSecretKey": AWS_Secret_Key,
+                    "instance_AWSAccessKey": AWSAccess_Key,
+                    "instance_AWSSessionToken": AWSSession_Token,
+                    "instance_region": z["Placement"]["AvailabilityZone"],
+                    "instance_os": z["PlatformDetails"],
+                }   
+                
+                for j in z["Tags"]:
+                    if "Name" in j.values():
+                        instance_dict["instance_name"] = j["Value"]
+                        
+                if "instance_name" not in instance_dict:
+                    instance_dict["instance_name"] = "Instance"
+                
+                volume_id = z["BlockDeviceMappings"][0]["Ebs"]["VolumeId"]
+                
+                for volume in resource.volumes.filter(VolumeIds=[volume_id]):
+                    instance_dict["instance_volume_type"] = volume.volume_type
+                
+                arr_dicts.append(instance_dict)
+            
+            
+    return arr_dicts
     
     
 
