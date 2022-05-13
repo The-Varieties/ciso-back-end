@@ -18,9 +18,9 @@ scrape_configs:
     #   - targets: ['localhost:9090']
 
   # Example job for node_exporter
-  # - job_name: 'node_exporter'
-  #   static_configs:
-  #     - targets: ['node-exporter:9100']
+  #  - job_name: 'node_exporter'
+  #    static_configs:
+  #      - targets: ['node-exporter:9100']
 
   # - job_name: 'node_exporter'
   #   file_sd_configs:
@@ -45,12 +45,3 @@ scrape_configs:
   #       role_arn: arn:aws:iam::208138571994:instance-profile/LabInstanceProfile
 
        
-        
-      
-remote_write:
-  - url: "http://promscale:9201/write"
-  
-remote_read:
-  - url: "http://promscale:9201/read"
-    read_recent: true
-  

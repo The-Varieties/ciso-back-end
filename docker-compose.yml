@@ -3,13 +3,10 @@ version: '3'
 volumes:
   prometheus-data:
     driver: local
-  grafana-data:
-    driver: local
   db-data:
     driver: local
 
 services:
-
   website:
     build: .
     container_name: website
@@ -69,36 +66,24 @@ services:
     volumes:
       - ./conf/prometheus:/conf/prometheus
       - prometheus-data:/prometheus
-    restart: unless-stopped
     mem_limit: 512m
+    restart: unless-stopped
     command:
       - "--config.file=/conf/prometheus/prometheus.yml"
       - "--storage.tsdb.retention.time=30d"
       
-  # Grafana just for demonstration purpose only
-  grafana:
-    image: grafana/grafana-oss:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    mem_limit: 512m
-    volumes:
-      - grafana-data:/var/lib/grafana
-    restart: unless-stopped
 
-  promscale:
-    image: timescale/promscale:latest
-    container_name: promscale
-    ports:
-      - 9201:9201/tcp
-    restart: on-failure
-    mem_limit: 512m
-    depends_on:
-      - db
-      - prometheus
-    environment:
-      PROMSCALE_DB_CONNECT_RETRIES: 10
-      PROMSCALE_WEB_TELEMETRY_PATH: /metrics-text
-      PROMSCALE_DB_URI: postgres://postgres:password@db:5432/cloud?sslmode=allow
-      
 
+
+
+
+
+
+
+
+
+
+
+
+
+  

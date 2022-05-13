@@ -30,7 +30,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rightsizing_recommendation',
     'database',
-    'data_visualization'
+    'data_visualization',
+    'userdata',
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True

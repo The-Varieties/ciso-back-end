@@ -20,6 +20,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/metrics/', include('rightsizing_recommendation.urls')),
     path('api/metrics/', include('data_visualization.urls')),
-    path('api/dashboard/', include('database.urls'))
-    
+    path('api/dashboard/', include('database.urls')),
+    path('api/users/', include('userdata.urls'))
 ]
