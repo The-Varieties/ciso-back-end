@@ -80,7 +80,7 @@ DATABASES = {
         'HOST': os.environ["POSTGRES_HOST"],
         'PORT':'5432',
         'TEST': {
-            'MIRROR': 'default',
+            'NAME': 'test_db'
         }
     }
 }

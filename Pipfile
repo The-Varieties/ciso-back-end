@@ -11,6 +11,8 @@ boto3 = "*"
 requests = "*"
 aws-assume-role-lib = "*"
 awspricing = "*"
+faker = "*"
+factory-boy = "*"
 
 [dev-packages]
 
