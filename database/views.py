@@ -1,6 +1,7 @@
 from urllib import response
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+import requests
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from .models import Instance
@@ -31,7 +32,8 @@ def instance(request):
         return JsonResponse(instance_serializer.data,safe=False)
     
     elif request.method=='POST':
-        aws_credentials = json.loads(request.body.decode('utf-8'))
+        aws_credentials = json.loads(str(request.body.decode('utf-8')).replace("'", '"'))
+       
         
         instances = utils.collect_EC2_instances(aws_credentials["access_key"], 
                                     aws_credentials["secret_key"],
@@ -41,8 +43,10 @@ def instance(request):
         
         instance_serializer = InstanceSerializer(data=instances, many=is_many)
         
-        if not instance_serializer.is_valid(): 
-            return Response(instance_serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if not instance_serializer.is_valid():
+            print("here") 
+            print(instance_serializer.errors)
+            return Response(instance_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         instance_serializer.save()
         
