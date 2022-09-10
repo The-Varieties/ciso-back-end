@@ -7,66 +7,30 @@ volumes:
     driver: local
 
 services:
-  website:
-    build: .
-    container_name: website
-    volumes:
-      - .:/code
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-    mem_limit: 512m
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASS=password
-      - POSTGRES_HOST=db
-    command: >
-      sh -c "python manage.py makemigrations &&
-             python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
-    
   db:
-    image: ghcr.io/timescale/dev_promscale_extension:develop-ts2-pg14
+    image: postgres:latest
     container_name: db
     ports:
-      - 5432:5432/tcp
+      - "5432:5432/tcp"
     volumes:
       - db-data:/var/lib/db-data
-    mem_limit: 512m
+    mem_reservation: 512m
     environment:
-      POSTGRES_PASSWORD: password
-      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: cloud
+
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
-    depends_on:
-      - website
     ports:
       - "9090:9090"
     volumes:
-      - ./conf/prometheus:/conf/prometheus
+      - ./ciso_back_end/conf/prometheus:/conf/prometheus
       - prometheus-data:/prometheus
-    mem_limit: 512m
+    mem_reservation: 512m
     restart: unless-stopped
     command:
       - "--config.file=/conf/prometheus/prometheus.yml"
       - "--storage.tsdb.retention.time=30d"
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  

@@ -1,23 +1,29 @@
 from pathlib import Path
 import os
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env()
+
+OS_ENVIRONMENT = os.environ.get("ENV")
+if OS_ENVIRONMENT == "prod":
+    environ.Env.read_env(".env")
+else:
+    environ.Env.read_env(".env.dev")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-&t#&)&x@m8-%)o5pi%hsujlysn)03lw-h-o#wz98nq9c4irzmm'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = ['*', 'http://localhost:9090']
+ALLOWED_HOSTS = [env('ALLOWED_HOSTS')]
 
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -28,13 +34,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'rightsizing_recommendation',
-    'database',
-    'data_visualization',
-    'userdata',
+    'ciso_back_end.api.rightsizing_recommendation',
+    'ciso_back_end.api.instances',
+    'ciso_back_end.api.data_visualization',
+    'ciso_back_end.api.users',
 ]
-
-CORS_ORIGIN_ALLOW_ALL = True
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -67,7 +71,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ciso_back_end.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
@@ -75,23 +78,15 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'cloud',
-        'USER': os.environ["POSTGRES_USER"],
-        'PASSWORD': os.environ["POSTGRES_PASS"],
-        'HOST': os.environ["POSTGRES_HOST"],
-        'PORT':'5432',
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': '5432',
         'TEST': {
             'NAME': 'test_db'
         }
     }
 }
-
-# 'USER': os.environ["POSTGRES_USER"],
-#         'PASSWORD': os.environ["POSTGRES_PASS"],
-#         'HOST': os.environ["POSTGRES_HOST"],
-
-# 'USER': 'postgres',
-#         'PASSWORD': 'password',
-#         'HOST': "localhost",
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -111,7 +106,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
@@ -122,9 +116,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-
-
 
 STATIC_URL = 'static/'
 
