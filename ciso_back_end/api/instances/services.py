@@ -19,30 +19,30 @@ def collect_ec2_instances(aws_access_key, aws_secret_key):
     for i in range(len(x) - 1):
         for y in myec2[x[i]]:
             for z in y['Instances']:
-                instance_dict = {
-                    "instance_pricing_plan": x[i],
-                    "instance_type": z["InstanceType"],
-                    "instance_ipv4": z["PublicIpAddress"] + ":9100",
-                    "instance_aws_secret_key": aws_secret_key,
-                    "instance_aws_access_key": aws_access_key,
-                    "instance_region": z["Placement"]["AvailabilityZone"],
-                    "instance_os": z["PlatformDetails"]
-                }
+                if z["State"]["Name"] == "running":
+                    instance_dict = {
+                        "instance_pricing_plan": x[i],
+                        "instance_type": z["InstanceType"],
+                        "instance_ipv4": z["PublicIpAddress"] + ":9100",
+                        "instance_aws_secret_key": aws_secret_key,
+                        "instance_aws_access_key": aws_access_key,
+                        "instance_region": z["Placement"]["AvailabilityZone"],
+                        "instance_os": z["PlatformDetails"]
+                    }
 
-                for j in z["Tags"]:
-                    if "Name" in j.values():
-                        instance_dict["instance_name"] = j["Value"]
+                    for j in z["Tags"]:
+                        if "Name" in j.values():
+                            instance_dict["instance_name"] = j["Value"]
 
-                if "instance_name" not in instance_dict:
-                    instance_dict["instance_name"] = "Instance"
+                    if "instance_name" not in instance_dict:
+                        instance_dict["instance_name"] = "Instance"
 
-                volume_id = z["BlockDeviceMappings"][0]["Ebs"]["VolumeId"]
+                    volume_id = z["BlockDeviceMappings"][0]["Ebs"]["VolumeId"]
 
-                for volume in resource.volumes.filter(VolumeIds=[volume_id]):
-                    instance_dict["instance_volume_type"] = volume.volume_type
+                    for volume in resource.volumes.filter(VolumeIds=[volume_id]):
+                        instance_dict["instance_volume_type"] = volume.volume_type
 
-                arr_dicts.append(instance_dict)
-
+                    arr_dicts.append(instance_dict)
     return arr_dicts
 
 
@@ -53,8 +53,8 @@ def get_targets_for_prometheus():
     if all_instances:
         for instance in all_instances.iterator():
             target_dict = {
-                "targets": [instance['instance_ipv4']],
-                "labels": {"hostname": instance['instance_name']}
+                "targets": [instance.instance_ipv4],
+                "labels": {"hostname": instance.instance_name}
             }
             response_data.append(target_dict)
     return response_data

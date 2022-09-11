@@ -35,16 +35,16 @@ def get_ram_usage_v2(instance):
 
 
 def get_instance_total_ram(instance):
-    params = {'query': 'sum(node_memory_MemTotal_bytes{instance=~"%s"})' % instance}
+    params = {'query': 'sum(node_memory_MemTotal_bytes{hostname=~"%s"})' % instance}
     result = req.get(PROMETHEUS_QUERY_URL, params=params).json()
-    return math.ceil(result['data']['result'] / (1024 ** 3))
+    return math.ceil(int(result['data']['result'][0]['value'][1]) / (1024 ** 3))
 
 
 def get_instance_uptime(instance):
-    params = {'query': 'avg(time() - node_boot_time_seconds{instance=~"%s"})' % instance}
+    params = {'query': 'avg(time() - node_boot_time_seconds{hostname=~"%s"})' % instance}
     result = req.get(PROMETHEUS_QUERY_URL, params=params).json()
 
-    total_time = round(result['data']['result'] / 3600, 2)
+    total_time = round(float(result['data']['result'][0]['value'][1]) / 3600, 2)
     time_unit = ""
 
     if total_time < 0:
@@ -58,14 +58,14 @@ def get_instance_uptime(instance):
 
 
 def get_instance_cpu_count(instance):
-    params = {'query': 'count(node_cpu_seconds_total{instance=~"%s", mode="system"})' % instance}
+    params = {'query': 'count(node_cpu_seconds_total{hostname=~"%s", mode="system"})' % instance}
     result = req.get(PROMETHEUS_QUERY_URL, params=params).json()
 
     return result['data']['result']
 
 
 def get_instance_server_info(instance):
-    params = {'query': 'node_uname_info {instance=~"%s"}' % instance}
+    params = {'query': 'node_uname_info {hostname=~"%s"}' % instance}
     result = req.get(PROMETHEUS_QUERY_URL, params=params).json()
 
     return result['data']['result']
@@ -85,7 +85,7 @@ def get_usage_classifier(instance, time_interval='7 days', under_threshold=35, o
 
         recommendations = _get_recommendations(usage_category=usage_category)
 
-        return cpu_usage_percentage, ram_usage_percentage, usage_category, recommendations
+        return cpu_usage_percentage, ram_usage_percentage, usage_category.name, recommendations
     else:
         raise APIException()
 

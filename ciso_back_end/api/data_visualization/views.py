@@ -7,7 +7,7 @@ from .services import *
 @api_view(['GET'])
 def get_data_vis_cpu(request):
     response_data = {
-        'name': request.query_params['metric'],
+        'name': 'CPU',
         'time': 'last %s' % request.query_params['time_interval']
     }
     hostname, results = get_data_visualization_cpu(
@@ -23,7 +23,7 @@ def get_data_vis_cpu(request):
 @api_view(['GET'])
 def get_data_vis_ram(request):
     response_data = {
-        'name': request.query_params['metric'],
+        'name': 'RAM',
         'time': 'last %s' % request.query_params['time_interval']
     }
 
