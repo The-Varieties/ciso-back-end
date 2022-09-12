@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'ciso_back_end.api.instances',
     'ciso_back_end.api.data_visualization',
     'ciso_back_end.api.users',
+    'ciso_back_end.api.financial_report'
 ]
 
 MIDDLEWARE = [
