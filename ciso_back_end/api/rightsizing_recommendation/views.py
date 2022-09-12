@@ -45,10 +45,9 @@ def get_server_info(request):
 
 
 @api_view(['GET'])
-def get_usage_classifier(request):
+def get_usage_category(request):
     if request.method == 'GET':
-        cpu_usage, ram_usage, usage_cat, recommendations = get_usage_classifier(request.query_params['instance'],
-                                                                                request.query_params['time_interval'])
+        cpu_usage, ram_usage, usage_cat, recommendations = get_usage_classifier(request.query_params['instance'], request.query_params['time_interval'])
         response_data = {
             'cpu': cpu_usage,
             'ram': ram_usage,

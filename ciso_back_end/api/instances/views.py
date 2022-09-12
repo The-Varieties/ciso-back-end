@@ -47,11 +47,10 @@ def instance(request):
 def instance_by_id(request, instance_id):
     if request.method == 'GET':
         instances = get_object_or_404(Instances, pk=instance_id)
+        instances.instance_status = get_usage_classifier(instances.instance_name)[2]
         instance_serializer = InstanceSerializer(instances)
-        data = instance_serializer.data
-        instance_serializer.data["instance_status"] = get_usage_classifier(data["instance_name"])
 
-        return Response(data)
+        return Response(data=instance_serializer.data)
 
     elif request.method == 'DELETE':
         instances = get_object_or_404(Instances, pk=instance_id)
