@@ -16,8 +16,8 @@ services:
       - db-data:/var/lib/db-data
     mem_reservation: 512m
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
       POSTGRES_DB: cloud
 
 
