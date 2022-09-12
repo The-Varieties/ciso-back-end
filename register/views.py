@@ -5,8 +5,8 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
-from .models import Login
-from .serializers import LoginSerializer
+from .models import Register
+from .serializers import RegisterSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -16,27 +16,26 @@ from utils import utils
 # Create your views here.
 @csrf_exempt
 @api_view(['GET', 'POST', 'DELETE'])
-def loginApi(request,id=0):
+def registerApi(request,id=0):
     if request.method=='GET':
-        login = Login.objects.all()
-        login_serializer = LoginSerializer(login,many=True)
+        register = Register.objects.all()
+        register_serializer = RegisterSerializer(register,many=True)
             
-        return JsonResponse(login_serializer.data,safe=False)
+        return JsonResponse(register_serializer.data,safe=False)
     
     elif request.method=='POST':
         # instance_data = JSONParser().parse(request)
-        login_serializer = LoginSerializer(data=request.data)
+        register_serializer = RegisterSerializer(data=request.data)
         
-        if login_serializer.is_valid():
-            login_serializer.save()
-            return Response(data=login_serializer.data, status=status.HTTP_201_CREATED)
+        if register_serializer.is_valid():
+            register_serializer.save()
+            return Response(data=register_serializer.data, status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_404_NOT_FOUND)
     
     elif request.method=='DELETE':
-        login = get_object_or_404(Login, pk=id)
-        login.delete()
+        register = get_object_or_404(Register, pk=id)
+        register.delete()
         return Response(status=status.HTTP_202_ACCEPTED)
-
 
 @api_view(['GET'])
 def syncPrometheus2(request):
