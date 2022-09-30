@@ -13,7 +13,7 @@ from .serializers import UserSerializer
 @api_view(['GET', 'POST', 'DELETE'])
 def user_api(request, user_id=0):
     if request.method == 'GET':
-        user = User.objects.all()
+        user = User.objects.filter(user_id=user)
         user_serializer = UserSerializer(user, many=True)
 
         return Response(user_serializer.data, status=status.HTTP_200_OK)
