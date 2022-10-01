@@ -13,10 +13,13 @@ from ..users.serializers import UserSerializer
 @api_view(['POST'])
 def register_user(request):
     if request.method == 'POST':
-        user_serializer = UserSerializer(data=request.data)
+        try:
+            user_serializer = UserSerializer(data=request.data)
 
-        if user_serializer.is_valid():
-            user_serializer.save()
-            return Response(data=user_serializer.data, status=status.HTTP_201_CREATED)
-        raise bad_request()
+            if user_serializer.is_valid():
+                user_serializer.save()
+                return Response(data=user_serializer.data, status=status.HTTP_201_CREATED)
+        except Exception:
+            raise bad_request(request, Exception)
+
 
