@@ -4,16 +4,19 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .services import *
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import bad_request
 from rest_framework import status
 
+from ..users.serializers import UserSerializer
 
-@api_view(['GET'])
+
+@api_view(['POST'])
 def register_user(request):
-    if request.method == 'GET':
-        user_id_result = authentice_user(request.query_params['username'], request.query_params['password'])
-        if user_id_result:
-            return Response(data=user_id_result, status=status.HTTP_200_OK)
-        else:
-            raise NotFound()
+    if request.method == 'POST':
+        user_serializer = UserSerializer(data=request.data)
+
+        if user_serializer.is_valid():
+            user_serializer.save()
+            return Response(data=user_serializer.data, status=status.HTTP_201_CREATED)
+        raise bad_request()
 

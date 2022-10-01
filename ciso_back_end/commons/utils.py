@@ -2,7 +2,10 @@ import datetime
 import math
 import time
 
+import jwt
 from django.core.exceptions import BadRequest
+
+from ciso_back_end.commons.constant import JWT_SECRET
 
 
 def format_time_interval(time_interval):
@@ -44,3 +47,13 @@ def convert_size(size_bytes):
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
     return "%s %s" % (s, size_name[i])
+
+
+def generate_token(user_id):
+    return jwt.encode({"id": user_id}, JWT_SECRET, algorithm="HS256")
+
+
+def decode_token(request):
+    auth = request.headers.get('Authorization')
+    token = auth.split(" ")[1]
+    return jwt.decode(token, JWT_SECRET, algorithms="HS256")

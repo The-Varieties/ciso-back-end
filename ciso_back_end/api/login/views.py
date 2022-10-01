@@ -8,9 +8,9 @@ from rest_framework import status
 @api_view(['GET'])
 def login_user(request):
     if request.method == 'GET':
-        user_id_result = authentice_user(request.query_params['username'], request.query_params['password'])
-        if user_id_result:
-            return Response(data=user_id_result, status=status.HTTP_200_OK)
+        token = authenticate_user(request.query_params['username'], request.query_params['password'])
+        if token:
+            return Response(data=token, status=status.HTTP_200_OK)
         else:
             raise NotFound()
 
