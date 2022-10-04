@@ -9,4 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
                   'user_username',
                   'user_firstname',
                   'user_lastname',
-                  'user_email')
+                  'user_aws_access_key',
+                  'user_aws_secret_key',
+                  'user_email',
+                  'user_password')

@@ -1,18 +1,30 @@
 from ciso_back_end.api.instances.models import Instances
 from rest_framework import serializers
 
+from ciso_back_end.api.users.models import User
+from ciso_back_end.api.users.serializers import UserSerializer
+
 
 class InstanceSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
     class Meta:
         model = Instances
         fields = ('instance_id', 
                   'instance_name', 
                   'instance_status', 
                   'instance_ipv4',
-                  'instance_aws_secret_key',
-                  'instance_aws_access_key',
                   'instance_region',
                   'instance_os',
                   'instance_volume_type',
                   'instance_type',
-                  'instance_pricing_plan')
+                  'instance_pricing_plan',
+                  'user')
+
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        user = User.objects.get(pk=user_data['user_id'])
+        instance = Instances.objects.create(**validated_data)
+        User.objects.create(instance=instance, **user_data)
+        return instance
+
+
