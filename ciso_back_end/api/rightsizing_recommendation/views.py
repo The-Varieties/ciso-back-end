@@ -1,9 +1,11 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .services import *
+from ...commons.decorators.login_required import login_required
 
 
 @api_view(['GET'])
+@login_required
 def get_cpu_usage(request):
     if request.method == 'GET':
         response_data = {
@@ -15,6 +17,7 @@ def get_cpu_usage(request):
 
 
 @api_view(['GET'])
+@login_required
 def get_ram_usage(request):
     if request.method == 'GET':
         response_data = {
@@ -25,6 +28,7 @@ def get_ram_usage(request):
 
 
 @api_view(['GET'])
+@login_required
 def get_server_info(request):
     if request.method == 'GET':
         response_data = {
@@ -45,6 +49,7 @@ def get_server_info(request):
 
 
 @api_view(['GET'])
+@login_required
 def get_usage_category(request):
     if request.method == 'GET':
         cpu_usage, ram_usage, usage_cat, recommendations = get_usage_classifier(request.query_params['instance'], request.query_params['time_interval'])
