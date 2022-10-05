@@ -14,7 +14,11 @@
   </component>
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$" />
+<<<<<<< HEAD
     <orderEntry type="jdk" jdkName="Python 3.8 (ciso_back_end-yZl9bzTe)" jdkType="Python SDK" />
+=======
+    <orderEntry type="jdk" jdkName="Pipenv (ciso-back-end)" jdkType="Python SDK" />
+>>>>>>> d4df3f2c7dd4f3be23c0f9f71570d4af88032516
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

@@ -3,7 +3,11 @@ from rest_framework.exceptions import APIException
 from ciso_back_end.api.instances.models import Instances
 
 
+<<<<<<< HEAD
 def collect_ec2_instances(aws_access_key, aws_secret_key):
+=======
+def collect_ec2_instances(aws_access_key, aws_secret_key, user):
+>>>>>>> d4df3f2c7dd4f3be23c0f9f71570d4af88032516
     session = boto3.Session(aws_access_key_id=aws_access_key,
                             aws_secret_access_key=aws_secret_key,
                             region_name='ap-southeast-1')
@@ -16,6 +20,10 @@ def collect_ec2_instances(aws_access_key, aws_secret_key):
 
     arr_dicts = []
     # TODO -> fix the naming of the keys
+<<<<<<< HEAD
+=======
+    # TODO -> Add user here from token
+>>>>>>> d4df3f2c7dd4f3be23c0f9f71570d4af88032516
     for i in range(len(x) - 1):
         for y in myec2[x[i]]:
             for z in y['Instances']:
@@ -24,8 +32,11 @@ def collect_ec2_instances(aws_access_key, aws_secret_key):
                         "instance_pricing_plan": x[i],
                         "instance_type": z["InstanceType"],
                         "instance_ipv4": z["PublicIpAddress"] + ":9100",
+<<<<<<< HEAD
                         "instance_aws_secret_key": aws_secret_key,
                         "instance_aws_access_key": aws_access_key,
+=======
+>>>>>>> d4df3f2c7dd4f3be23c0f9f71570d4af88032516
                         "instance_region": z["Placement"]["AvailabilityZone"],
                         "instance_os": z["PlatformDetails"]
                     }
@@ -42,7 +53,23 @@ def collect_ec2_instances(aws_access_key, aws_secret_key):
                     for volume in resource.volumes.filter(VolumeIds=[volume_id]):
                         instance_dict["instance_volume_type"] = volume.volume_type
 
+<<<<<<< HEAD
                     arr_dicts.append(instance_dict)
+=======
+                    instance = Instances.objects.create(
+                        instance_os=instance_dict['instance_os'],
+                        instance_pricing_plan=instance_dict['instance_pricing_plan'],
+                        instance_type=instance_dict['instance_type'],
+                        instance_ipv4=instance_dict['instance_ipv4'],
+                        instance_region=instance_dict['instance_region'],
+                        instance_name=instance_dict['instance_name'],
+                        instance_volume_type=instance_dict['instance_volume_type'],
+                        user=user
+                    )
+
+                    instance.save()
+    client.close()
+>>>>>>> d4df3f2c7dd4f3be23c0f9f71570d4af88032516
     return arr_dicts
 
 
@@ -58,4 +85,7 @@ def get_targets_for_prometheus():
             }
             response_data.append(target_dict)
     return response_data
+<<<<<<< HEAD
 
+=======
+>>>>>>> d4df3f2c7dd4f3be23c0f9f71570d4af88032516

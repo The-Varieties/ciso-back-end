@@ -7,9 +7,20 @@ from rest_framework.response import Response
 from rest_framework import status
 from .services import *
 from ..rightsizing_recommendation.services import *
+<<<<<<< HEAD
 
 
 @api_view(['GET', 'POST'])
+=======
+from ..users.models import User
+from ..users.serializers import UserSerializer
+from ...commons.decorators.login_required import login_required
+from ...commons.utils import decode_token
+
+
+@api_view(['GET', 'POST'])
+@login_required
+>>>>>>> d4df3f2c7dd4f3be23c0f9f71570d4af88032516
 def instance(request):
     if request.method == 'GET':
         instances = Instances.objects.all()
@@ -29,6 +40,7 @@ def instance(request):
     elif request.method == 'POST':
         aws_credentials = json.loads(str(request.body.decode('utf-8')).replace("'", '"'))
 
+<<<<<<< HEAD
         instances = collect_ec2_instances(aws_credentials["access_key"],
                                           aws_credentials["secret_key"])
 
@@ -44,6 +56,32 @@ def instance(request):
 
 
 @api_view(['GET', 'DELETE'])
+=======
+        user_id = decode_token(request)["id"]
+        user = User.objects.get(user_id=user_id)
+        user.user_aws_access_key = aws_credentials["access_key"]
+        user.user_aws_secret_key = aws_credentials["secret_key"]
+        user.save()
+        # userData = UserSerializer(user)
+
+        instances = collect_ec2_instances(aws_credentials["access_key"],
+                                          aws_credentials["secret_key"],
+                                          user)
+
+        # is_many = isinstance(instances, list)
+        # instance_serializer = InstanceSerializer(data=instances, many=is_many)
+        #
+        # if not instance_serializer.is_valid():
+        #     raise BadRequest(instance_serializer.errors)
+        #
+        # instance_serializer.save()
+
+        return Response(status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'DELETE'])
+@login_required
+>>>>>>> d4df3f2c7dd4f3be23c0f9f71570d4af88032516
 def instance_by_id(request, instance_id):
     if request.method == 'GET':
         instances = get_object_or_404(Instances, pk=instance_id)
