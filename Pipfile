@@ -15,6 +15,7 @@ faker = "*"
 factory-boy = "*"
 django-environ = "*"
 pyjwt = "*"
+tzdata = "*"
 
 [dev-packages]
 
