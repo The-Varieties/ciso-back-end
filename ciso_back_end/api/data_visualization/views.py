@@ -2,9 +2,11 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .services import *
+from ...commons.decorators.login_required import login_required
 
 
 @api_view(['GET'])
+@login_required
 def get_data_vis_cpu(request):
     response_data = {
         'name': 'CPU',
@@ -21,6 +23,7 @@ def get_data_vis_cpu(request):
 
 
 @api_view(['GET'])
+@login_required
 def get_data_vis_ram(request):
     response_data = {
         'name': 'RAM',
