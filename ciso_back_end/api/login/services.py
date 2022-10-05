@@ -1,12 +1,14 @@
 from multiprocessing import AuthenticationError
+from rest_framework import status
 
 from ..users.models import *
 from ...commons.utils import generate_token
 
 
 def authenticate_user(username, password):
-    user = User.objects.get(user_username=username, user_password=password)
-    if user:
+    try:
+        user = User.objects.get(user_username=username, user_password=password)
         token = generate_token(user.user_id)
         return token
-    raise AuthenticationError()
+    except User.DoesNotExist:
+        return None
