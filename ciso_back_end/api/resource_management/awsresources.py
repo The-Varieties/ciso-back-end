@@ -3,6 +3,7 @@ import time  # to wait until AWS RDS instance will be created
 from datetime import datetime
 
 import sys
+from urllib import response
 import boto3
 # import dotenv 
 # from botocore.exceptions import ClientError
@@ -19,9 +20,14 @@ resource = session.resource('ec2')
 
 # ec2 = boto3.client('ec2')
 # if sys.argv[1] == 'ON':
-#     response = ec2.monitor_instances(InstanceIds=['INSTANCE_ID'])
-# else:
-#     response = ec2.unmonitor_instances(InstanceIds=['INSTANCE_ID'])
+# response = client.monitor_instances(
+#     InstanceIds=[
+#         'i-049159307d725977b'
+#     ]
+# )
+# print(response)
+
+# response = client.unmonitor_instances(InstanceIds=['i-049159307d725977b'])
 # print(response)
 
 # instance_id = sys.argv[2]
@@ -30,32 +36,11 @@ resource = session.resource('ec2')
 # ec2 = boto3.client('ec2')
 
 
-# if action == 'ON':
-#     # Do a dryrun first to verify permissions
-#     try:
-#         ec2.start_instances(InstanceIds=[instance_id], DryRun=True)
-#     except ClientError as e:
-#         if 'DryRunOperation' not in str(e):
-#             raise
+# response = client.start_instances(InstanceIds=['i-049159307d725977b'])
+# print(response)
 
-#     # Dry run succeeded, run start_instances without dryrun
-#     try:
-response = client.start_instances(InstanceIds=['i-049159307d725977b'])
-print(response)
-
-#     except ClientError as e:
-#         print(e)
-# else:
-#     # Do a dryrun first to verify permissions
-#     try:
-#         ec2.stop_instances(InstanceIds=[instance_id], DryRun=True)
-#     except ClientError as e:
-#         if 'DryRunOperation' not in str(e):
-#             raise
-
-#     # Dry run succeeded, call stop_instances without dryrun
-#     try:
-
+# while x=start:
+# if x=stop:
 # response = client.stop_instances(InstanceIds=['i-049159307d725977b'])
 # print(response)
 
@@ -73,8 +58,18 @@ print(response)
 
 # print(response)
 
-response = client.modify_instance_attribute(
+# response = client.modify_instance_attribute(
 
-    InstanceId='i-049159307d725977b',
-    InstanceType={'Value': 't1.micro'}
-)
+#     InstanceId='i-049159307d725977b',
+#     InstanceType={'Value': 't1.micro'}
+# )
+
+# if CurrentState=stopped:
+# response = client.modify_instance_attribute(
+#     InstanceId='i-049159307d725977b',
+#     InstanceType={'Value': 't1.micro'}
+# )
+
+response = client.describe_instance_status(InstanceIds=['i-049159307d725977b'])
+if response['InstanceStatuses'][0]['InstanceState']['Name'] == 'stopped':
+    print('It is stopped')
