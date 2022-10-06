@@ -1,3 +1,4 @@
+from os import stat
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .services import *
@@ -12,6 +13,6 @@ def login_user(request):
         if token:
             return Response(data=token, status=status.HTTP_200_OK)
         else:
-            raise NotFound()
+            return Response(data=None, status=status.HTTP_200_OK)
 
 
