@@ -18,7 +18,6 @@ session = boto3.Session(aws_access_key_id=aws_access_key_id,
 client = session.client('ec2')
 resource = session.resource('ec2')
 
-# ec2 = boto3.client('ec2')
 # if sys.argv[1] == 'ON':
 # response = client.monitor_instances(
 #     InstanceIds=[
@@ -35,14 +34,13 @@ resource = session.resource('ec2')
 
 # ec2 = boto3.client('ec2')
 
+def start_instances():
+    response = client.start_instances(InstanceIds=['i-049159307d725977b'])
+    print(response)
 
-# response = client.start_instances(InstanceIds=['i-049159307d725977b'])
-# print(response)
-
-# while x=start:
-# if x=stop:
-# response = client.stop_instances(InstanceIds=['i-049159307d725977b'])
-# print(response)
+def stop_instances():
+    response = client.stop_instances(InstanceIds=['i-049159307d725977b'])
+    print(response)
 
 
 # response = client.send_ssh_public_key(
@@ -63,13 +61,31 @@ resource = session.resource('ec2')
 #     InstanceId='i-049159307d725977b',
 #     InstanceType={'Value': 't1.micro'}
 # )
+def modify_instance_attribute():
+    response = client.modify_instance_attribute(
+        InstanceId='i-049159307d725977b',
+        InstanceType={'Value': 't1.micro'}
+    )
 
-# if CurrentState=stopped:
-# response = client.modify_instance_attribute(
-#     InstanceId='i-049159307d725977b',
-#     InstanceType={'Value': 't1.micro'}
-# )
+def main():    
 
-response = client.describe_instance_status(InstanceIds=['i-049159307d725977b'])
-if response['InstanceStatuses'][0]['InstanceState']['Name'] == 'stopped':
-    print('It is stopped')
+    while client.state['Name'] == 'running':
+        
+        answer = input('Stop instances?')
+        if answer == 'Yes':
+            stop_instances()
+        else:
+            break
+
+        if client.state['Name'] == 'stopped':
+            answer2 = input('Modify instances?')
+            if answer2 == 'Yes':
+                modify_instance_attribute()
+            else:
+                answer2 = input('Start instances?')
+                if answer2 == 'Yes':
+                    start_instances()
+                else:
+                    break
+        else:
+            break
