@@ -8,8 +8,8 @@ import boto3
 # # import dotenv 
 # from botocore.exceptions import ClientError
 
-aws_secret_access_key = "xQ3wCAIU2p7/zR0HpN9BvAWvkBAUrcBr1LY7RdKA"
-aws_access_key_id = "AKIA2Q5I3UYGBW2Q6K7U"
+aws_secret_access_key = "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"
+aws_access_key_id = "AKIA2Q5I3UYGMGO222SJ"
 
 session = boto3.Session(aws_access_key_id=aws_access_key_id,
                         aws_secret_access_key=aws_secret_access_key,                        
@@ -46,6 +46,24 @@ resource = session.resource('ec2')
 # )
 
 # print(response)
+# def running():
+
+# def stopped():
+
+# response = resource.Instance('i-049159307d725977b')
+# if response.state['Name'] == 'running':
+#     print('It is running')
+# else:
+#     print('It is not running')
+
+# response = client.describe_instance_status(InstanceIds=['i-049159307d725977b'])
+# if response['InstanceStatuses'][0]['InstanceState']['Name'] == 'running':
+#     print('It is running')
+# else:
+#     print('It is not running')
+
+# response = client.describe_instance_status(InstanceIds=['i-049159307d725977b'])
+# print(response)
 
 def start_instances():
     response = client.start_instances(InstanceIds=['i-049159307d725977b'])
@@ -55,36 +73,33 @@ def stop_instances():
     response = client.stop_instances(InstanceIds=['i-049159307d725977b'])
     print(response)
 
-def modify_instance_attribute():
+def modify_instance_attribute_type():
     response = client.modify_instance_attribute(
         InstanceId='i-049159307d725977b',
-        InstanceType={'Value': 't2.micro'}
+        InstanceType={'Value': 't1.micro'}
     )
 
+    
 def main():    
 
-    instance = resource.Instance('i-049159307d725977b')
-    # while response.state['Name'] == 'running':
-    #     answer = input('Stop instances?')
-    #     if answer == 'Yes':
-    #         stop_instances()
-    while instance.state['Name'] == 'stopped':
-        answer2 = input('Modify instances?')
-        if answer2 == 'Yes':
-            modify_instance_attribute()
-        else:
-            answer3 = input('Start instances?')
-            if answer3 == 'Yes':
-                start_instances()
-            else:
-                break
-
+            instance = resource.Instance('i-049159307d725977b')
+        # while instance.state['Name'] == 'running':
+        #     answer = input('Stop instances?')
+        #     if answer == 'Yes':
+        #         stop_instances()
+            while instance.state['Name'] == 'stopped':
+                    answer2 = input('What do you wish to modify?')
+                    if answer2 == 'Instance Type':
+                        modify_instance_attribute_type()
+                    else:
+                        answer3 = input('Start instances?')
+                        if answer3 == 'Yes':
+                            start_instances()
+                        else:
+                            break
+            # else:
+            #     break
 
 if __name__ == "__main__":
     main()
 
-# response = resource.Instance('i-049159307d725977b')
-# if response.state['Name'] == 'running':
-#     print('It is running')
-# else:
-#     print('It is not running')
