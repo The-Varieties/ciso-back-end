@@ -9,7 +9,8 @@ class InstanceSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     class Meta:
         model = Instances
-        fields = ('instance_id', 
+        fields = ('instance_id',
+                  'instance_aws_id',
                   'instance_name', 
                   'instance_status', 
                   'instance_ipv4',
@@ -22,7 +23,6 @@ class InstanceSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')
-        user = User.objects.get(pk=user_data['user_id'])
         instance = Instances.objects.create(**validated_data)
         User.objects.create(instance=instance, **user_data)
         return instance

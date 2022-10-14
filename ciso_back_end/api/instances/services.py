@@ -1,5 +1,4 @@
 import boto3
-from rest_framework.exceptions import APIException
 from ciso_back_end.api.instances.models import Instances
 
 
@@ -22,6 +21,7 @@ def collect_ec2_instances(aws_access_key, aws_secret_key, user):
             for z in y['Instances']:
                 if z["State"]["Name"] == "running":
                     instance_dict = {
+                        "instance_aws_id": z["InstanceId"],
                         "instance_pricing_plan": x[i],
                         "instance_type": z["InstanceType"],
                         "instance_ipv4": z["PublicIpAddress"] + ":9100",
@@ -42,6 +42,7 @@ def collect_ec2_instances(aws_access_key, aws_secret_key, user):
                         instance_dict["instance_volume_type"] = volume.volume_type
 
                     instance = Instances.objects.create(
+                        instance_aws_id=instance_dict['instance_aws_id'],
                         instance_os=instance_dict['instance_os'],
                         instance_pricing_plan=instance_dict['instance_pricing_plan'],
                         instance_type=instance_dict['instance_type'],
