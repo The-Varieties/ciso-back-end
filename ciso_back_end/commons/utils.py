@@ -55,5 +55,4 @@ def generate_token(user_id):
 
 def decode_token(request):
     auth = request.headers.get('Authorization')
-    token = auth.split(" ")[1]
-    return jwt.decode(token, JWT_SECRET, algorithms="HS256")
+    return jwt.decode(auth, JWT_SECRET, algorithms="HS256")
