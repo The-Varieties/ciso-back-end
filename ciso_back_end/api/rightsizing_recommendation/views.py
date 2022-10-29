@@ -2,6 +2,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .services import *
 from ...commons.decorators.login_required import login_required
+from ...commons.utils import decode_token
 
 
 @api_view(['GET'])
@@ -52,11 +53,13 @@ def get_server_info(request):
 @login_required
 def get_usage_category(request):
     if request.method == 'GET':
-        cpu_usage, ram_usage, usage_cat, recommendations = get_usage_classifier(request.query_params['instance'], request.query_params['time_interval'])
+        user_id = decode_token(request)["id"]
+        cpu_usage, ram_usage, usage_cat, recommendations, new_instance_family = get_usage_classifier(request.query_params['instance'], user_id, request.query_params['time_interval'])
         response_data = {
             'cpu': cpu_usage,
             'ram': ram_usage,
             'usage_cat': usage_cat,
-            'recommendations': recommendations
+            'recommendations': recommendations,
+            'recommended_instance_family': new_instance_family
         }
         return Response(response_data)

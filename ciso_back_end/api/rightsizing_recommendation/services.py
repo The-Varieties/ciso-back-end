@@ -1,6 +1,9 @@
 import math
+import boto3
 import requests as req
+
 from rest_framework.exceptions import APIException
+from ciso_back_end.api.instances.models import Instances
 from ciso_back_end.commons.constant import PROMETHEUS_QUERY_URL
 from ciso_back_end.commons.utils import format_time_rate
 from ciso_back_end.commons.values.usage_category import UsageCategory
@@ -71,7 +74,7 @@ def get_instance_server_info(instance):
     return result['data']['result']
 
 
-def get_usage_classifier(instance, time_interval='7 days', under_threshold=35, over_threshold=95):
+def get_usage_classifier(instance, user_id, time_interval='7 days', under_threshold=35, over_threshold=95):
     usage_category = UsageCategory.Optimized
 
     cpu_usage_percentage = get_cpu_usage_v2(time_interval, instance)
@@ -83,48 +86,99 @@ def get_usage_classifier(instance, time_interval='7 days', under_threshold=35, o
         elif cpu_usage_percentage < under_threshold or ram_usage_percentage < under_threshold:
             usage_category = UsageCategory.UnderUtilized
 
-        recommendations = _get_recommendations(usage_category=usage_category)
+        recommendations, new_instance_family = _get_recommendations(usage_category=usage_category, user_id=user_id, instance=instance)
 
-        return cpu_usage_percentage, ram_usage_percentage, usage_category.name, recommendations
+        return cpu_usage_percentage, ram_usage_percentage, usage_category.name, recommendations, new_instance_family
     else:
         raise APIException()
 
 
-def _get_recommendations(usage_category):
-    recommendations = ''
+def _get_recommendations(usage_category, user_id, instance):
+    instances = Instances.objects.raw(
+        "SELECT * FROM instances_instances WHERE user_id='{0}' AND instance_name='{1}' LIMIT 1".format(user_id,
+                                                                                                       instance))
 
-    if usage_category == UsageCategory.OverUtilized:
-        recommendations = [{
-            'recommendation': 'Upsize the over-utilized EC2 instance',
-            'details': 'Upsize the EC2 instances by selecting the right instance family to add more hardware resources',
-            'steps': ['Navigate to the EC2 dashboard in your AWS',
-                      'Select the over-utilized instance and stop it',
-                      'Change the current instance type to upsize it',
-                      'After choosing the right instance type, then apply it',
-                      'Start the EC2 instance again']
-        }, {
-            'recommendation': 'Perform horizontal scaling',
-            'details': 'Increase the capacity of Auto Scaling Group (ASG) to handle the workload by adding more EC2 '
-                       'instances to the group, which consists of the over-utilized EC2 instance.',
-            'steps': ['Navigate to the EC2 dashboard in your AWS',
-                      'In the left panel, choose Auto Scaling Groups',
-                      'Select the AWS ASG, which you want to upgrade',
-                      'From the Details tab, click the Edit button to edit the selected ASG configuration',
-                      'Increase the number of EC2 instances that can be run in that ASG by raising the existing '
-                      'number in the Desired and Max fields',
-                      'Finally click Save to apply the changes']
-        }]
+    if instances:
+        tier_family = ''
+        recommendations = ''
+        SIZES = [
+            "nano",
+            "micro",
+            "small",
+            "medium",
+            "large",
+            "xlarge",
+            "2xlarge"
+        ]
 
-    elif usage_category == UsageCategory.UnderUtilized:
-        recommendations = [{
-            'recommendation': 'Downsize the underutilized EC2 instance',
-            'details': 'Downsize the EC2 instances by selecting the right instance family to fit the current '
-                       'workload, so it will reduce operation costs',
-            'steps': ['Navigate to the EC2 dashboard in your AWS',
-                      'Select the underutilized instance and stop it',
-                      'Change the current instance type to downsize it',
-                      'After choosing the right instance type, then apply it',
-                      'Start the EC2 instance again']
-        }]
+        for single_instance in instances:
+            tier_family = single_instance.instance_type
 
-    return recommendations
+        session = boto3.Session(aws_secret_access_key="EjLo20dsxUImGcg+wZhk7yszCnmOnBzZCK0FieZA",
+                                aws_access_key_id="AKIA2Q5I3UYGK5KOQDWA",
+                                region_name='ap-southeast-1')
+
+        client = session.client('ec2')
+        describe_args = {'Filters': [
+            {
+                'Name': 'instance-type',
+                'Values': [
+                    '{0}*'.format(tier_family.split(".")[0]),
+                ]
+            },
+        ]}
+        list_instances = []
+        while True:
+            describe_result = client.describe_instance_types(**describe_args)
+            for i in describe_result['InstanceTypes']:
+                list_instances.append(i['InstanceType'])
+            if 'NextToken' not in describe_result:
+                break
+            describe_args['NextToken'] = describe_result['NextToken']
+        list_instances.sort(key=lambda x: SIZES.index(x.split(".")[1]))
+        current_index = list_instances.index(tier_family)
+
+        if usage_category == UsageCategory.OverUtilized:
+            if current_index == (len(list_instances) - 1):
+                return None
+            else:
+                new_instance_family = list_instances[current_index + 1]
+                recommendations = [{
+                    'recommendation': 'Upsize the over-utilized EC2 instance',
+                    'details': 'Upsize the EC2 instances by selecting the right instance family to add more hardware resources',
+                    'steps': ['Navigate to the EC2 dashboard in your AWS',
+                              'Select the over-utilized instance and stop it',
+                              'Change the current instance type into {} to upsize it'.format(new_instance_family),
+                              'After choosing the right instance type, then apply it',
+                              'Start the EC2 instance again']
+                }, {
+                    'recommendation': 'Perform horizontal scaling',
+                    'details': 'Increase the capacity of Auto Scaling Group (ASG) to handle the workload by adding more EC2 '
+                               'instances to the group, which consists of the over-utilized EC2 instance.',
+                    'steps': ['Navigate to the EC2 dashboard in your AWS',
+                              'In the left panel, choose Auto Scaling Groups',
+                              'Select the AWS ASG, which you want to upgrade',
+                              'From the Details tab, click the Edit button to edit the selected ASG configuration',
+                              'Increase the number of EC2 instances that can be run in that ASG by raising the existing '
+                              'number in the Desired and Max fields',
+                              'Finally click Save to apply the changes']
+                }]
+
+        elif usage_category == UsageCategory.UnderUtilized:
+            if current_index == 0:
+                return None
+            else:
+                new_instance_family = list_instances[current_index - 1]
+                recommendations = [{
+                    'recommendation': 'Downsize the underutilized EC2 instance',
+                    'details': 'Downsize the EC2 instances by selecting the right instance family to fit the current '
+                               'workload, so it will reduce operation costs',
+                    'steps': ['Navigate to the EC2 dashboard in your AWS',
+                              'Select the underutilized instance and stop it',
+                              'Change the current instance type into {} to downsize it'.format(new_instance_family),
+                              'After choosing the right instance type, then apply it',
+                              'Start the EC2 instance again']
+                }]
+
+        return recommendations, new_instance_family
+    return None
