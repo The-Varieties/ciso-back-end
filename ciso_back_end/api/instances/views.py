@@ -19,9 +19,10 @@ def instance(request):
     if request.method == 'GET':
         instances = Instances.objects.all()
         instance_serializer = InstanceSerializer(instances, many=True)
+        user_id = decode_token(request)["id"]
 
         for data in instance_serializer.data:
-            usage = get_usage_classifier(data["instance_name"])
+            usage = get_usage_classifier(data["instance_name"], user_id)
 
             if usage:
                 data["instance_status"] = usage
@@ -60,8 +61,9 @@ def instance(request):
 @login_required
 def instance_by_id(request, instance_id):
     if request.method == 'GET':
+        user_id = decode_token(request)["id"]
         instances = get_object_or_404(Instances, pk=instance_id)
-        instances.instance_status = get_usage_classifier(instances.instance_name)[2]
+        instances.instance_status = get_usage_classifier(instances.instance_name, user_id)[2]
         instance_serializer = InstanceSerializer(instances)
 
         return Response(data=instance_serializer.data)
