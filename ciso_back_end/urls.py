@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/dashboard/', include('ciso_back_end.api.instances.urls')),
     path('api/users/', include('ciso_back_end.api.users.urls')),
     path('api/logins/', include('ciso_back_end.api.login.urls')),
-    path('api/registers/', include('ciso_back_end.api.register.urls'))
+    path('api/registers/', include('ciso_back_end.api.register.urls')),
+    path('api/resource-management/', include('ciso_back_end.api.resource_management.urls'))
 
 ]
