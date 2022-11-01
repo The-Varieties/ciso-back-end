@@ -86,18 +86,17 @@ def get_usage_classifier(instance, user_id, time_interval='7 days', under_thresh
         elif cpu_usage_percentage < under_threshold or ram_usage_percentage < under_threshold:
             usage_category = UsageCategory.UnderUtilized
 
-        recommendations, new_instance_family = _get_recommendations(usage_category=usage_category, user_id=user_id, instance=instance)
+        recommendations, new_instance_family = get_recommendations(usage_category=usage_category, user_id=user_id, instance=instance)
 
         return cpu_usage_percentage, ram_usage_percentage, usage_category.name, recommendations, new_instance_family
     else:
         raise APIException()
 
 
-def _get_recommendations(usage_category, user_id, instance):
+def get_recommendations(usage_category, user_id, instance):
     instances = Instances.objects.raw(
         "SELECT * FROM instances_instances WHERE user_id='{0}' AND instance_name='{1}' LIMIT 1".format(user_id,
                                                                                                        instance))
-
     if instances:
         tier_family = ''
         recommendations = ''
@@ -123,7 +122,7 @@ def _get_recommendations(usage_category, user_id, instance):
             {
                 'Name': 'instance-type',
                 'Values': [
-                    '{0}*'.format(tier_family.split(".")[0]),
+                    '{0}*'.format(tier_family.split(".")[0][0])
                 ]
             },
         ]}
@@ -135,7 +134,8 @@ def _get_recommendations(usage_category, user_id, instance):
             if 'NextToken' not in describe_result:
                 break
             describe_args['NextToken'] = describe_result['NextToken']
-        list_instances.sort(key=lambda x: SIZES.index(x.split(".")[1]))
+
+        list_instances.sort(key=lambda x: (x.split(".")[0], SIZES.index(x.split(".")[1])))
         current_index = list_instances.index(tier_family)
 
         if usage_category == UsageCategory.OverUtilized:

@@ -1,30 +1,28 @@
 from datetime import datetime, timedelta
 
-import awspricing
 import boto3
 import json
+import calendar
+
 from pkg_resources import resource_filename
 
-FLT = '[{{"Field": "tenancy", "Value": "shared", "Type": "TERM_MATCH"}},' \
-      '{{"Field": "operatingSystem", "Value": "{o}", "Type": "TERM_MATCH"}},' \
-      '{{"Field": "preInstalledSw", "Value": "NA", "Type": "TERM_MATCH"}},' \
-      '{{"Field": "instanceType", "Value": "{t}", "Type": "TERM_MATCH"}},' \
-      '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}},' \
-      '{{"Field": "capacitystatus", "Value": "Used", "Type": "TERM_MATCH"}}]'
+from ciso_back_end.api.instances.models import Instances
+from ciso_back_end.api.instances.serializers import InstanceSerializer
+from ciso_back_end.api.rightsizing_recommendation.services import get_usage_classifier
+from ciso_back_end.commons.constant import NUMBER_HOURS_IN_A_MONTH
 
-
-def get_price(client, region, instance, os):
-    f = FLT.format(r=region, t=instance, o=os)
-    data = client.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f))
-    od = json.loads(data['PriceList'][0])['terms']['OnDemand']
-    id1 = list(od)[0]
-    id2 = list(od[id1]['priceDimensions'])[0]
-    return od[id1]['priceDimensions'][id2]['pricePerUnit']['USD']
+pricing_client = boto3.client(aws_access_key_id="AKIA2Q5I3UYGK5KOQDWA",
+                              aws_secret_access_key="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",
+                              service_name='pricing',
+                              region_name='us-east-1')
 
 
 def _get_region_name(region_code):
     default_region = 'US East (N. Virginia)'
     endpoint_file = resource_filename('botocore', 'data/endpoints.json')
+    region_code.rstrip(region_code[-1])
+    if not region_code[-1].isdigit():
+        region_code = region_code.rstrip(region_code[-1])
     try:
         with open(endpoint_file, 'r') as f:
             data = json.load(f)
@@ -33,95 +31,104 @@ def _get_region_name(region_code):
         return default_region
 
 
-def calculate_financial_report():
-    client = boto3.client(aws_access_key_id="AKIA2Q5I3UYGG2ODJJDX",
-                          aws_secret_access_key="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",
-                          service_name='pricing',
-                          region_name='us-east-1')
-
-    current_cost_usage = fetch_current_cost()
-
-    price = get_price(client, _get_region_name('eu-west-1'), 't3.micro', 'Linux')
-    return current_cost_usage
+def _get_date_range():
+    current_date = datetime.now()
+    days_number_of_month = calendar.monthrange(current_date.year, current_date.month)[1]
+    return current_date.replace(day=1).date().__str__(), current_date.replace(day=days_number_of_month).date().__str__()
 
 
-def fetch_current_cost():
-    today_date = datetime.today().date().__str__()
-    last_month_date = datetime.today() - timedelta(days=30)
-    last_month_date = last_month_date.date().__str__()
-    client = boto3.client(aws_access_key_id="AKIA2Q5I3UYGG2ODJJDX",
-                          aws_secret_access_key="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",
-                          service_name='ce',
-                          region_name='us-east-1')
-    response = client.get_rightsizing_recommendation(
-        Configuration={
-            'RecommendationTarget': 'SAME_INSTANCE_FAMILY',
-            'BenefitsConsidered': True
-        },
-        Service='AmazonEC2'
-    )
-    # EC2 - Other
+def get_ec2_instance_hourly_price(region_code,
+                                  instance_type,
+                                  operating_system='Linux',
+                                  preinstalled_software='NA',
+                                  tenancy='Shared',
+                                  is_byol=False):
+    region_name = _get_region_name(region_code)
 
-    response2 = client.get_cost_and_usage(
-        TimePeriod={
-            'Start': last_month_date,
-            'End': today_date
-        },
-        Granularity='MONTHLY',
-        Metrics=[
-            'UsageQuantity',
-            'UnblendedCost'
-        ],
-        Filter={
-            'Dimensions': {
-                'Key': 'SERVICE',
-                'Values': [
-                    'Amazon Elastic Compute Cloud - Compute',
-                    'EC2 - Other'
-                ]
-            }
-        },
-        GroupBy=[
-            {
-                'Type': 'DIMENSION',
-                'Key': 'SERVICE'
-            }
-        ]
-    )
-    return response
+    if is_byol:
+        license_model = 'Bring your own license'
+    else:
+        license_model = 'No License required'
 
-def get_current_expenses():
-    client = boto3.client('ce', region_name='us-east-1')
+    if tenancy == 'Host':
+        capacity_status = 'AllocatedHost'
+    else:
+        capacity_status = 'Used'
 
-    response = client.get_cost_and_usage(
-        TimePeriod={
-            'Start': '2018-10-01',
-            'End': '2018-10-31'
-        },
-        Granularity='MONTHLY',
-        Metrics=[
-            'AmortizedCost',
-        ]
-    )
+    filters = [
+        {'Type': 'TERM_MATCH', 'Field': 'termType', 'Value': 'OnDemand'},
+        {'Type': 'TERM_MATCH', 'Field': 'capacitystatus', 'Value': capacity_status},
+        {'Type': 'TERM_MATCH', 'Field': 'location', 'Value': region_name},
+        {'Type': 'TERM_MATCH', 'Field': 'instanceType', 'Value': instance_type},
+        {'Type': 'TERM_MATCH', 'Field': 'tenancy', 'Value': tenancy},
+        {'Type': 'TERM_MATCH', 'Field': 'operatingSystem', 'Value': operating_system},
+        {'Type': 'TERM_MATCH', 'Field': 'preInstalledSw', 'Value': preinstalled_software},
+        {'Type': 'TERM_MATCH', 'Field': 'licenseModel', 'Value': license_model},
+    ]
 
-    print(response)
+    response = pricing_client.get_products(ServiceCode='AmazonEC2', Filters=filters)
+    price_value = 0
+
+    for price in response['PriceList']:
+        price = json.loads(price)
+
+        for on_demand in price['terms']['OnDemand'].values():
+            for price_dimensions in on_demand['priceDimensions'].values():
+                price_value = price_dimensions['pricePerUnit']['USD']
+
+        return float(price_value)
     return None
 
-# def calculate_financial_report():
-#     # awspricing.client = boto3.client(service_name='pricing',
-#     #                                  aws_access_key_id="AKIA2Q5I3UYGG2ODJJDX",
-#     #                                  aws_secret_access_key="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",
-#     #                                  region_name='us-east-1')
-#
-#     ec2_offer = awspricing.offer('AmazonEC2')
-#
-#     hourly = ec2_offer.reserved_hourly(
-#         'c4.xlarge',
-#         operating_system='Linux',
-#         lease_contract_length='3yr',
-#         offering_class='convertible',
-#         purchase_option='Partial Upfront',
-#         region='us-east-1'
-#     )
-#
-#     return hourly
+
+def calculate_financial_report(user_id):
+    instances = Instances.objects.raw(
+        "SELECT * FROM instances_instances"
+    )
+    total_current_monthly_price = 0
+    total_optimized_monthly_price = 0
+    total_potential_savings = 0
+    list_all_instances_cost = []
+
+    for single_instance in instances:
+        instance_serializer = InstanceSerializer(single_instance)
+        current_hourly_price, current_monthly_price, optimized_hourly_price, optimized_monthly_price, potential_savings = calculate_savings(
+            single_instance, user_id)
+        temp_data_dict = {
+            "instance": instance_serializer.data,
+            "current_hourly_price": current_hourly_price,
+            "current_monthly_price": current_monthly_price,
+            "optimized_hourly_price": optimized_hourly_price,
+            "optimized_monthly_price": optimized_monthly_price,
+            "potential_savings": potential_savings
+        }
+        list_all_instances_cost.append(temp_data_dict)
+        total_current_monthly_price += current_monthly_price
+        total_optimized_monthly_price += optimized_monthly_price
+        total_potential_savings += potential_savings
+
+    return total_current_monthly_price, total_optimized_monthly_price, total_potential_savings, list_all_instances_cost
+
+
+def calculate_single_instance_financial_report(instance_id, user_id):
+    instances = Instances.objects.raw(
+        "SELECT * FROM instances_instances WHERE instance_aws_id='{0}' LIMIT 1".format(instance_id)
+    )
+
+    for single_instance in instances:
+        return calculate_savings(single_instance, user_id)
+
+
+def calculate_savings(single_instance, user_id):
+    tier_family = single_instance.instance_type
+    region = single_instance.instance_region
+    current_hourly_price = get_ec2_instance_hourly_price(region_code=region, instance_type=tier_family,
+                                                         operating_system="Linux")
+    current_monthly_price = current_hourly_price * NUMBER_HOURS_IN_A_MONTH
+    cpu_usage_percentage, ram_usage_percentage, usage_category, recommendations, new_instance_family = get_usage_classifier(
+        instance=single_instance.instance_name, user_id=user_id
+    )
+    optimized_hourly_price = get_ec2_instance_hourly_price(region_code=region, instance_type=new_instance_family,
+                                                           operating_system="Linux")
+    optimized_monthly_price = optimized_hourly_price * NUMBER_HOURS_IN_A_MONTH
+    potential_savings = current_monthly_price - optimized_monthly_price
+    return current_hourly_price, current_monthly_price, optimized_hourly_price, optimized_monthly_price, potential_savings
