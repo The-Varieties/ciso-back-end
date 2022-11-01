@@ -9,6 +9,7 @@ urlpatterns = [
     path('api/users/', include('ciso_back_end.api.users.urls')),
     path('api/logins/', include('ciso_back_end.api.login.urls')),
     path('api/registers/', include('ciso_back_end.api.register.urls')),
+    path('api/financial/', include('ciso_back_end.api.financial_report.urls')),
     path('api/resource-management/', include('ciso_back_end.api.resource_management.urls'))
 
 ]
