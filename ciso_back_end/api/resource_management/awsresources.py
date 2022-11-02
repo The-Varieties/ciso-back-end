@@ -12,7 +12,7 @@ aws_secret_access_key = "O6rt9vAoNFJIHXCGD6GzBM7aTXva47bWTfyDcXTh"
 aws_access_key_id = "AKIA2Q5I3UYGMGO222SJ"
 
 session = boto3.Session(aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=aws_secret_access_key,                        
+                        aws_secret_access_key=aws_secret_access_key,
                         region_name='ap-southeast-1')
 
 client = session.client('ec2')

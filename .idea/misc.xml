@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
 <<<<<<< HEAD
+<<<<<<< HEAD
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8 (ciso_back_end-yZl9bzTe)" project-jdk-type="Python SDK" />
 =======
   <component name="ProjectRootManager" version="2" project-jdk-name="Pipenv (ciso-back-end)" project-jdk-type="Python SDK" />
 >>>>>>> d4df3f2c7dd4f3be23c0f9f71570d4af88032516
+=======
+  <component name="ProjectRootManager" version="2" project-jdk-name="Pipenv (ciso-back-end)" project-jdk-type="Python SDK" />
+>>>>>>> af7e46260e8355b41c724e8b3dc0792f1edd1d75
 </project>
