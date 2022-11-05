@@ -1,7 +1,7 @@
 import boto3
 
-aws_secret_access_key = "puUg/5WW06YJlEvYvrLaku4hL1NxRGjfzotNDxMh"
-aws_access_key_id = "AKIA2Q5I3UYGLDW72AP2"
+aws_secret_access_key = "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"
+aws_access_key_id = "AKIA2Q5I3UYGDZRKCAVW"
 
 
 def setup_boto3(access_key, secret_key, instance_id):
