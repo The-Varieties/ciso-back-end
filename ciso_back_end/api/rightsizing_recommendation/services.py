@@ -4,6 +4,7 @@ import requests as req
 
 from rest_framework.exceptions import APIException
 from ciso_back_end.api.instances.models import Instances
+from ciso_back_end.api.users.models import User
 from ciso_back_end.commons.constant import PROMETHEUS_QUERY_URL
 from ciso_back_end.commons.utils import format_time_rate
 from ciso_back_end.commons.values.usage_category import UsageCategory
@@ -97,9 +98,16 @@ def get_recommendations(usage_category, user_id, instance):
     instances = Instances.objects.raw(
         "SELECT * FROM instances_instances WHERE user_id='{0}' AND instance_name='{1}' LIMIT 1".format(user_id,
                                                                                                        instance))
+    user = User.objects.raw(
+        "SELECT user_id, user_aws_access_key , user_aws_secret_key FROM users_user WHERE user_id = '{0}'".format(user_id))
+
     if instances:
         tier_family = ''
         recommendations = ''
+        aws_secret_key = ''
+        aws_access_key = ''
+        new_instance_family = ''
+
         SIZES = [
             "nano",
             "micro",
@@ -113,8 +121,12 @@ def get_recommendations(usage_category, user_id, instance):
         for single_instance in instances:
             tier_family = single_instance.instance_type
 
-        session = boto3.Session(aws_secret_access_key="EjLo20dsxUImGcg+wZhk7yszCnmOnBzZCK0FieZA",
-                                aws_access_key_id="AKIA2Q5I3UYGK5KOQDWA",
+        for single_user in user:
+            aws_access_key = single_user.user_aws_access_key
+            aws_secret_key = single_user.user_aws_secret_key
+
+        session = boto3.Session(aws_secret_access_key=aws_secret_key,
+                                aws_access_key_id=aws_access_key,
                                 region_name='ap-southeast-1')
 
         client = session.client('ec2')
