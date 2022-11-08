@@ -9,12 +9,8 @@ from pkg_resources import resource_filename
 from ciso_back_end.api.instances.models import Instances
 from ciso_back_end.api.instances.serializers import InstanceSerializer
 from ciso_back_end.api.rightsizing_recommendation.services import get_usage_classifier
+from ciso_back_end.api.users.models import User
 from ciso_back_end.commons.constant import NUMBER_HOURS_IN_A_MONTH
-
-pricing_client = boto3.client(aws_access_key_id="AKIA2Q5I3UYGK5KOQDWA",
-                              aws_secret_access_key="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",
-                              service_name='pricing',
-                              region_name='us-east-1')
 
 
 def _get_region_name(region_code):
@@ -39,6 +35,7 @@ def _get_date_range():
 
 def get_ec2_instance_hourly_price(region_code,
                                   instance_type,
+                                  user_id,
                                   operating_system='Linux',
                                   preinstalled_software='NA',
                                   tenancy='Shared',
@@ -65,6 +62,13 @@ def get_ec2_instance_hourly_price(region_code,
         {'Type': 'TERM_MATCH', 'Field': 'preInstalledSw', 'Value': preinstalled_software},
         {'Type': 'TERM_MATCH', 'Field': 'licenseModel', 'Value': license_model},
     ]
+
+    user = User.objects.get(user_id=user_id)
+
+    pricing_client = boto3.client(aws_access_key_id=user.user_aws_access_key,
+                                  aws_secret_access_key=user.user_aws_secret_key,
+                                  service_name='pricing',
+                                  region_name='us-east-1')
 
     response = pricing_client.get_products(ServiceCode='AmazonEC2', Filters=filters)
     price_value = 0
@@ -122,13 +126,13 @@ def calculate_savings(single_instance, user_id):
     tier_family = single_instance.instance_type
     region = single_instance.instance_region
     current_hourly_price = get_ec2_instance_hourly_price(region_code=region, instance_type=tier_family,
-                                                         operating_system="Linux")
+                                                         operating_system="Linux", user_id=user_id)
     current_monthly_price = current_hourly_price * NUMBER_HOURS_IN_A_MONTH
     cpu_usage_percentage, ram_usage_percentage, usage_category, recommendations, new_instance_family = get_usage_classifier(
         instance=single_instance.instance_name, user_id=user_id
     )
     optimized_hourly_price = get_ec2_instance_hourly_price(region_code=region, instance_type=new_instance_family,
-                                                           operating_system="Linux")
+                                                           operating_system="Linux", user_id=user_id)
     optimized_monthly_price = optimized_hourly_price * NUMBER_HOURS_IN_A_MONTH
     potential_savings = current_monthly_price - optimized_monthly_price
     return current_hourly_price, current_monthly_price, optimized_hourly_price, optimized_monthly_price, potential_savings
