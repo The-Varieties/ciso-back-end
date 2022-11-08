@@ -192,5 +192,13 @@ def get_recommendations(usage_category, user_id, instance):
                               'Start the EC2 instance again']
                 }]
 
+        else:
+            new_instance_family = list_instances[current_index]
+            recommendations = [{
+                'recommendation': 'This instance is in its best utilization',
+                'details': '',
+                'steps': ['']
+            }]
+
         return recommendations, new_instance_family
     return None
