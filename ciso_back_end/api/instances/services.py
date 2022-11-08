@@ -14,8 +14,6 @@ def collect_ec2_instances(aws_access_key, aws_secret_key, user):
     x = list(myec2.keys())
 
     arr_dicts = []
-    # TODO -> fix the naming of the keys
-    # TODO -> Add user here from token
     for i in range(len(x) - 1):
         for y in myec2[x[i]]:
             for z in y['Instances']:

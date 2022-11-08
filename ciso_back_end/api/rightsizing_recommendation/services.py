@@ -96,6 +96,14 @@ def get_usage_classifier(instance, user_id, time_interval='7 days', under_thresh
         usage_category = UsageCategory.Pending
     recommendations, new_instance_family = get_recommendations(usage_category=usage_category, user_id=user_id, instance=instance)
 
+    instance = Instances.objects.raw(
+        "SELECT * FROM instances_instances WHERE instance_name='{0}' LIMIT 1".format(instance)
+    )
+
+    for single_instance in instance:
+        single_instance.instance_status = usage_category.name
+        single_instance.save()
+
     return cpu_usage_percentage, ram_usage_percentage, usage_category.name, recommendations, new_instance_family
 
 

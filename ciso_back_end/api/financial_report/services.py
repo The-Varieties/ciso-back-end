@@ -95,6 +95,7 @@ def calculate_financial_report(user_id):
 
     for single_instance in instances:
         instance_serializer = InstanceSerializer(single_instance)
+
         current_hourly_price, current_monthly_price, optimized_hourly_price, optimized_monthly_price, potential_savings = calculate_savings(
             single_instance, user_id)
         temp_data_dict = {
