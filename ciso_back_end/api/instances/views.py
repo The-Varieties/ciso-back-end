@@ -22,15 +22,10 @@ def instance(request):
         user_id = decode_token(request)["id"]
 
         for data in instance_serializer.data:
-            usage = get_usage_classifier(data["instance_name"], user_id)
-
-            if usage:
-                data["instance_status"] = usage
-            else:
-                data["instance_status"] = "Pending"
+            cpu_usage_percentage, ram_usage_percentage, usage_category, recommendations, new_instance_family = get_usage_classifier(data["instance_name"], user_id)
+            data["instance_status"] = usage_category
 
         return Response(instance_serializer.data)
-
 
     elif request.method == 'POST':
         aws_credentials = json.loads(str(request.body.decode('utf-8')).replace("'", '"'))
@@ -40,19 +35,10 @@ def instance(request):
         user.user_aws_access_key = aws_credentials["access_key"]
         user.user_aws_secret_key = aws_credentials["secret_key"]
         user.save()
-        # userData = UserSerializer(user)
 
         instances = collect_ec2_instances(aws_credentials["access_key"],
                                           aws_credentials["secret_key"],
                                           user)
-
-        # is_many = isinstance(instances, list)
-        # instance_serializer = InstanceSerializer(data=instances, many=is_many)
-        #
-        # if not instance_serializer.is_valid():
-        #     raise BadRequest(instance_serializer.errors)
-        #
-        # instance_serializer.save()
 
         return Response(status=status.HTTP_201_CREATED)
 
@@ -63,7 +49,8 @@ def instance_by_id(request, instance_id):
     if request.method == 'GET':
         user_id = decode_token(request)["id"]
         instances = get_object_or_404(Instances, pk=instance_id)
-        instances.instance_status = get_usage_classifier(instances.instance_name, user_id)[2]
+        usage_classifier_result = get_usage_classifier(instances.instance_name, user_id)
+        instances.instance_status = usage_classifier_result[2]
         instance_serializer = InstanceSerializer(instances)
 
         return Response(data=instance_serializer.data)
