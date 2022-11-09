@@ -19,6 +19,8 @@ def register_user(request):
             if user_serializer.is_valid():
                 user_serializer.save()
                 return Response(data=user_serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(request,"The username is already exist!")
         except Exception:
             raise bad_request(request, Exception)
 
