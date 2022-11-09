@@ -18,7 +18,10 @@ def get_cpu_usage_v2(time_interval, instance):
     result = req.get(PROMETHEUS_QUERY_URL, params=params).json()
 
     if result['status'] == 'success':
-        cpu_usage = float(result['data']['result'][0]['value'][1])
+        if result['data']['result']:
+            cpu_usage = float(result['data']['result'][0]['value'][1])
+        else:
+            return None
         return cpu_usage
     else:
         raise APIException()
@@ -32,7 +35,10 @@ def get_ram_usage_v2(instance):
     result = req.get(PROMETHEUS_QUERY_URL, params=params).json()
 
     if result['status'] == 'success':
-        ram_usage = float(result['data']['result'][0]['value'][1])
+        if result['data']['result']:
+            ram_usage = float(result['data']['result'][0]['value'][1])
+        else:
+            return None
         return ram_usage
     else:
         raise APIException()
@@ -86,12 +92,20 @@ def get_usage_classifier(instance, user_id, time_interval='7 days', under_thresh
             usage_category = UsageCategory.OverUtilized
         elif cpu_usage_percentage < under_threshold or ram_usage_percentage < under_threshold:
             usage_category = UsageCategory.UnderUtilized
-
-        recommendations, new_instance_family = get_recommendations(usage_category=usage_category, user_id=user_id, instance=instance)
-
-        return cpu_usage_percentage, ram_usage_percentage, usage_category.name, recommendations, new_instance_family
     else:
-        raise APIException()
+        usage_category = UsageCategory.Pending
+    recommendations, new_instance_family = get_recommendations(usage_category=usage_category, user_id=user_id, instance=instance)
+
+    instance = Instances.objects.raw(
+        "SELECT * FROM instances_instances WHERE instance_name='{0}' LIMIT 1".format(instance)
+    )
+
+    for single_instance in instance:
+        single_instance.instance_status = usage_category.name
+        single_instance.save()
+
+    return cpu_usage_percentage, ram_usage_percentage, usage_category.name, recommendations, new_instance_family
+
 
 
 def get_recommendations(usage_category, user_id, instance):
@@ -191,6 +205,14 @@ def get_recommendations(usage_category, user_id, instance):
                               'After choosing the right instance type, then apply it',
                               'Start the EC2 instance again']
                 }]
+
+        else:
+            new_instance_family = list_instances[current_index]
+            recommendations = [{
+                'recommendation': 'This instance is in its best utilization',
+                'details': '',
+                'steps': ['']
+            }]
 
         return recommendations, new_instance_family
     return None

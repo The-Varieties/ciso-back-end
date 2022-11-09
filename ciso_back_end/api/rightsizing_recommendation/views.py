@@ -54,12 +54,12 @@ def get_server_info(request):
 def get_usage_category(request):
     if request.method == 'GET':
         user_id = decode_token(request)["id"]
-        cpu_usage, ram_usage, usage_cat, recommendations, new_instance_family = get_usage_classifier(request.query_params['instance'], user_id, request.query_params['time_interval'])
+        usage_classifier_result = get_usage_classifier(request.query_params['instance'], user_id, request.query_params['time_interval'])
         response_data = {
-            'cpu': cpu_usage,
-            'ram': ram_usage,
-            'usage_cat': usage_cat,
-            'recommendations': recommendations,
-            'recommended_instance_family': new_instance_family
+            'cpu': usage_classifier_result[0] if usage_classifier_result[0] else '',
+            'ram': usage_classifier_result[1] if usage_classifier_result[1] else '',
+            'usage_cat': usage_classifier_result[2],
+            'recommendations': usage_classifier_result[3],
+            'recommended_instance_family': usage_classifier_result[4],
         }
         return Response(response_data)

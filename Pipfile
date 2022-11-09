@@ -16,8 +16,9 @@ factory-boy = "*"
 django-environ = "*"
 pyjwt = "*"
 tzdata = "*"
+psycopg2-binary = "==2.9.3"
 
 [dev-packages]
 
 [requires]
-python_version = "3.8.10"
+python_version = "3.8.5"
